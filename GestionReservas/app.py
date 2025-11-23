@@ -668,7 +668,7 @@ def delete_reservation_by_id(reservation_id):
         liberar_url = f"{gestion_vuelos_url}/free_seat/{airplane_id}/seats/{seat_number}"
 
         try:
-            response = requests.put(liberar_url, timeout=5)
+            response = requests.put(liberar_url, timeout=20)
             if response.status_code == 200:
                 logging.info(f"🪑 Asiento {seat_number} del avión {airplane_id} liberado exitosamente en GestiónVuelos.")
             else:
@@ -939,7 +939,8 @@ def edit_reservation(reservation_code):
         try:
             status_resp = requests.get(
                 f"{gestion_vuelos_url}/get_airplane_seats/{airplane_id}/seats",
-                timeout=5
+                timeout=20
+
             )
         except requests.exceptions.ConnectionError:
             return jsonify({'message': 'No se pudo conectar con GestiónVuelos para verificar asiento.'}), 503
@@ -961,7 +962,7 @@ def edit_reservation(reservation_code):
         try:
             free_resp = requests.put(
                 f"{gestion_vuelos_url}/free_seat/{airplane_id}/seats/{old_seat}",
-                timeout=5
+                timeout=20
             )
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             return jsonify({'message': 'Error liberando el asiento anterior en GestiónVuelos.'}), 503
@@ -974,7 +975,7 @@ def edit_reservation(reservation_code):
             reserve_resp = requests.put(
                 f"{gestion_vuelos_url}/update_seat_status/{airplane_id}/seats/{new_seat}",
                 json={"status": "Reservado"},
-                timeout=5
+                timeout=20
             )
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             return jsonify({'message': 'Error reservando el nuevo asiento en GestiónVuelos.'}), 503
@@ -1373,7 +1374,7 @@ def create_payment():
             vuelo_resp = requests.put(
                 f"{gestion_vuelos_url}/update_seat_status/{airplane_id}/seats/{seat_number}",
                 json={"status": "Pagado"},
-                timeout=5
+                timeout=20
             )
             if vuelo_resp.status_code != 200:
                 logging.warning(f"⚠️ GestiónVuelos devolvió {vuelo_resp.status_code} al marcar asiento {seat_number} como Pagado.")

@@ -2,17 +2,16 @@
 import json
 import locale
 import logging
-import os
 import random
 import re
-import signal
 import string
-import time
 from collections import Counter
 from datetime import datetime, timedelta
+import os
+import threading
+import uuid
 
 # Third-party Libraries
-import requests
 from dateutil import parser  # pip install python-dateutil
 from dotenv import load_dotenv
 from faker import Faker
@@ -23,30 +22,38 @@ from marshmallow import Schema, fields, validates, ValidationError, RAISE
 # Flask
 from flask import Flask, jsonify, request
 
-
-# Define el tiempo máximo de espera en segundos
+# -----------------------------
+# Concurrencia y estado global
+# -----------------------------
+STORE_LOCK = threading.RLock()
+INITIALIZED = False
 MAX_TIMEOUT = 5
 
-## Cargar variables de entorno desde el archivo .env
+# -----------------------------
+# Env y logging
+# -----------------------------
 load_dotenv("config.env")
 
-
-## Configuración de logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        # logging.FileHandler("app.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()]
 )
 
-
-## Configuración de la aplicación Flask
 app = Flask(__name__)
 
+# === Identificador de instancia (por proceso) ===
+INSTANCE_ID = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
 
-## Configuración de Swagger
+@app.after_request
+def _add_headers(resp):
+    resp.headers["X-Instance-Id"] = INSTANCE_ID
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+# -----------------------------
+# Swagger
+# -----------------------------
 swagger_template = {
     "info": {
         "title": "Air Travel API: Módulo Gestión de Vuelos",
@@ -61,435 +68,223 @@ swagger_template = {
         },
     },
     "tags": [
-        {
-          "name": "Airplanes",
-          "description": "Operations related to airplane data"
-        },
-        {
-          "name": "Airplanes Seats",
-          "description": "Operations related to airplane seats data"
-        },
-        {
-          "name": "Routes",
-          "description": "Operations related to airplane routes"
-        },
+        {"name": "Airplanes", "description": "Operations related to airplane data"},
+        {"name": "Airplanes Seats", "description": "Operations related to airplane seats data"},
+        {"name": "Routes", "description": "Operations related to airplane routes"},
     ],
     "definitions": {
         "AirplaneSchema": {
             "type": "object",
             "properties": {
-                "airplane_id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "model": {
-                    "type": "string",
-                    "example": "Boeing 737"
-                },
-                "manufacturer": {
-                    "type": "string",
-                    "example": "Boeing"
-                },
-                "year": {
-                    "type": "integer",
-                    "example": 2019
-                },
-                "capacity": {
-                    "type": "integer",
-                    "example": 15
-                }
+                "airplane_id": {"type": "integer", "example": 1},
+                "model": {"type": "string", "example": "Boeing 737"},
+                "manufacturer": {"type": "string", "example": "Boeing"},
+                "year": {"type": "integer", "example": 2019},
+                "capacity": {"type": "integer", "example": 15}
             },
             "required": ["airplane_id", "model", "manufacturer", "year", "capacity"]
         },
         "AirplaneSeatSchema": {
-          "type": "object",
-          "properties": {
-            "seat_number": {
-              "type": "string",
-              "example": "12A",
-              "description": "Número del asiento (ej. 12A)"
+            "type": "object",
+            "properties": {
+                "seat_number": {"type": "string", "example": "12A", "description": "Número del asiento"},
+                "status": {
+                    "type": "string",
+                    "enum": ["Libre", "Reservado", "Pagado"],
+                    "example": "Libre",
+                    "description": "Estado actual del asiento"
+                }
             },
-            "status": {
-              "type": "string",
-              "enum": ["Libre", "Reservado"],
-              "example": "Libre",
-              "description": "Estado actual del asiento"
-            }
-          },
             "required": ["seat_number", "status"]
         },
         "AirplaneRouteSchema": {
-          "type": "object",
-          "properties": {
-            "airplane_route_id": { "type": "integer", "example": 1 },
-            "airplane_id": { "type": "integer", "example": 2 },
-            "flight_number": { "type": "string", "example": "AV-1234" },
-            "departure": { "type": "string", "example": "Aeropuerto Internacional Juan Santamaría" },
-            "departure_time": { "type": "string", "example": "Marzo 30, 2025 - 16:46:19" },
-            "arrival": { "type": "string", "example": "Aeropuerto Internacional El Dorado" },
-            "arrival_time": { "type": "string", "example": "Marzo 30, 2025 - 19:25:00" },
-            "flight_time": {
-              "type": "string", "example": "2 horas 39 minutos", "readOnly": True
+            "type": "object",
+            "properties": {
+                "airplane_route_id": {"type": "integer", "example": 1},
+                "airplane_id": {"type": "integer", "example": 2},
+                "flight_number": {"type": "string", "example": "AV-1234"},
+                "departure": {"type": "string", "example": "Aeropuerto Internacional Juan Santamaría"},
+                "departure_time": {"type": "string", "example": "Marzo 30, 2025 - 16:46:19"},
+                "arrival": {"type": "string", "example": "Aeropuerto Internacional El Dorado"},
+                "arrival_time": {"type": "string", "example": "Marzo 30, 2025 - 19:25:00"},
+                "flight_time": {"type": "string", "example": "2 horas 39 minutos", "readOnly": True},
+                "price": {"type": "integer", "example": 98000},
+                "Moneda": {"type": "string", "enum": ["Colones", "Dolares", "Euros"], "example": "Colones"}
             },
-            "price": { "type": "integer", "example": 98000 },
-            "Moneda": {
-              "type": "string",
-              "enum": ["Colones", "Dolares", "Euros"],
-              "example": "Colones"
+            "required": [
+                "airplane_route_id", "airplane_id", "flight_number",
+                "departure", "departure_time", "arrival", "arrival_time", "price", "Moneda"
+            ],
+            "example": {
+                "airplane_route_id": 1,
+                "airplane_id": 1,
+                "flight_number": "AV-1234",
+                "departure": "Aeropuerto Internacional Juan Santamaría",
+                "departure_time": "Marzo 30, 2025 - 16:46:19",
+                "arrival": "Aeropuerto Internacional El Dorado",
+                "arrival_time": "Marzo 30, 2025 - 19:25:00",
+                "price": 98000,
+                "Moneda": "Colones"
             }
-          },
-          "required": [
-            "airplane_route_id", "airplane_id", "flight_number",
-            "departure", "departure_time", "arrival", "arrival_time", "price", "Moneda"
-          ],
-          "example": {
-            "airplane_route_id": 1,
-            "airplane_id": 1,
-            "flight_number": "AV-1234",
-            "departure": "Aeropuerto Internacional Juan Santamaría",
-            "departure_time": "Marzo 30, 2025 - 16:46:19",
-            "arrival": "Aeropuerto Internacional El Dorado",
-            "arrival_time": "Marzo 30, 2025 - 19:25:00",
-            "price": 98000,
-            "Moneda": "Colones"
-          }
         },
         "ErrorSchema": {
             "type": "object",
             "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Descripción del error"
-                },
+                "message": {"type": "string", "example": "Descripción del error"},
                 "errors": {
                     "type": "object",
                     "description": "Detalles adicionales del error",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": { "type": "string" }
-                    }
+                    "additionalProperties": {"type": "array", "items": {"type": "string"}}
                 }
             }
         }
     }
 }
-
-## Configuración de Swagger
 swagger = Swagger(app, template=swagger_template)
 
-
-############################################################################################################
-############################################################################################################
-############################################################################################################
-## Aqui inicia Airplanes datos
-############################################################################################################
-############################################################################################################
-############################################################################################################
-
-
-## Generar datos de aviones falsos
+# -----------------------------
+# Datos en memoria e índices
+# -----------------------------
 fake_airplane = Faker()
-## Añadir el proveedor de AirTravel a Faker
 fake_airplane.add_provider(AirTravelProvider)
 
-
-# Lista de algunos modelos de aviones comunes
 airplane_models = [
     'Boeing 737', 'Boeing 777', 'Airbus A320', 'Airbus A380', 'Boeing 787',
     'Embraer E190', 'Airbus A350', 'Boeing 767', 'McDonnell Douglas MD-80',
     'Airbus A330'
 ]
 
-
-# Función para generar el número de vuelo en formato alfanumérico (2 letras - 4 números)
 def generate_flight_number():
-    letters = ''.join(random.choices(string.ascii_uppercase, k=2))  # 2 letras aleatorias
-    numbers = random.randint(1000, 9999)  # 4 números aleatorios
+    letters = ''.join(random.choices(string.ascii_uppercase, k=2))
+    numbers = random.randint(1000, 9999)
     return f"{letters}-{numbers}"
 
-
-## Lista para almacenar los asientos de todos los aviones
+# Almacenes
+airplanes = []
+airplanes_by_id = {}
 seats = []
+airplanes_routes = []
 
+def reindex_airplanes():
+    airplanes_by_id.clear()
+    for a in airplanes:
+        airplanes_by_id[a['airplane_id']] = a
 
-## Función para generar asientos para un avión específico
 def generar_asientos_para_avion(airplane_id, capacidad=15):
     columnas = ['A', 'B', 'C', 'D', 'E', 'F']
     asientos = []
     total_generados = 0
     fila = 1
-
     while total_generados < capacidad:
         for letra in columnas:
             if total_generados >= capacidad:
                 break
-            asiento = {
+            asientos.append({
                 'airplane_id': airplane_id,
                 'seat_number': f"{fila}{letra}",
                 'status': 'Libre'
-            }
-            asientos.append(asiento)
+            })
             total_generados += 1
         fila += 1
-
     return asientos
 
+# Seed inicial
+with STORE_LOCK:
+    for i in range(1, 4):
+        year_raw = fake_airplane.year()
+        year = int(year_raw) if isinstance(year_raw, str) and year_raw.isdigit() else year_raw
+        avion = {
+            'airplane_id': i,
+            'model': random.choice(airplane_models),
+            'manufacturer': fake_airplane.company(),
+            'year': int(year),
+            'capacity': 15
+        }
+        airplanes.append(avion)
+        seats.extend(generar_asientos_para_avion(avion['airplane_id'], capacidad=avion['capacity']))
+    reindex_airplanes()
 
-airplanes = []
+logging.info("✅ Aviones iniciales generados: %d", len(airplanes))
 
-
-## Generar datos de aviones falsos con sus asientos
-for i in range(1, 4):
-    year_raw = fake_airplane.year()
-    year = int(year_raw) if isinstance(year_raw, str) and year_raw.isdigit() else year_raw
-    avion = {
-        'airplane_id': i,
-        'model': random.choice(airplane_models),
-        'manufacturer': fake_airplane.company(),
-        'year': year,
-        'capacity': 15
-    }
-    airplanes.append(avion)
-
-    # Generar asientos para este avión y agregarlos a la lista global
-    asientos_avion = generar_asientos_para_avion(avion['airplane_id'], capacidad=avion['capacity'])
-    seats.extend(asientos_avion)
-
-
-logging.info(f"\n\nInicio de generador de aviones \n")
-# Imprimir los datos generados
-for airplane in airplanes:
-    logging.info(f"Avión generado: {airplane}")
-
-logging.info(f"✅ Total de aviones generados: {len(airplanes)}\n")
-
-
-## AirplaneSchema para validar los datos de los aviones
+# -----------------------------
+# Schemas
+# -----------------------------
 class AirplaneSchema(Schema):
     class Meta:
-        unknown = RAISE  # Lanza error si se envía un campo no definido
+        unknown = RAISE
+    airplane_id = fields.Int(required=True, error_messages={"required": "El campo 'airplane_id' es obligatorio."})
+    model = fields.Str(required=True)
+    manufacturer = fields.Str(required=True)
+    year = fields.Int(required=True, validate=lambda x: x > 0)
+    capacity = fields.Int(required=True, validate=lambda x: x > 0)
 
-    airplane_id = fields.Int(required=True, error_messages={
-        "required": "El campo 'airplane_id' es obligatorio.",
-        "invalid": "Debe ser un número entero."
-    })
-    model = fields.Str(required=True, error_messages={
-        "required": "El campo 'model' es obligatorio.",
-        "invalid": "Debe ser una cadena de texto."
-    })
-    manufacturer = fields.Str(required=True, error_messages={
-        "required": "El campo 'manufacturer' es obligatorio.",
-        "invalid": "Debe ser una cadena de texto."
-    })
-    year = fields.Int(required=True, validate=lambda x: x > 0, error_messages={
-        "required": "El campo 'year' es obligatorio.",
-        "invalid": "Debe ser un número entero."
-    })
-    capacity = fields.Int(required=True, validate=lambda x: x > 0, error_messages={
-        "required": "El campo 'capacity' es obligatorio.",
-        "invalid": "Debe ser un número entero positivo."
-    })
+airplane_schema = AirplaneSchema()
+airplane_list_schema = AirplaneSchema(many=True)
 
+class AirplaneSeatSchema(Schema):
+    airplane_id = fields.Int(required=True, validate=lambda x: x > 0)
+    seat_number = fields.Str(required=True)
+    status = fields.Str(required=True, validate=lambda x: x in ["Libre", "Reservado", "Pagado"])
+    class Meta:
+        unknown = RAISE
 
-## Instanciamos el esquema para usarlo para validar mas adelante
-airplane_Schema = AirplaneSchema()
+airplane_seat_schema = AirplaneSeatSchema()
+airplane_seats_schema = AirplaneSeatSchema(many=True)
 
+class AirplaneRouteSchema(Schema):
+    class Meta:
+        unknown = RAISE
+    airplane_route_id = fields.Int(required=True)
+    airplane_id = fields.Int(required=True)
+    flight_number = fields.Str(required=True)
+    departure = fields.Str(required=True)
+    departure_time = fields.Str(required=True)
+    arrival = fields.Str(required=True)
+    arrival_time = fields.Str(required=True)
+    flight_time = fields.Str(dump_only=True)
+    price = fields.Int(required=True)
+    Moneda = fields.Str(required=True)
 
-## Función para validar la estructura y los campos de un avión
-def validar_avion(avion, current_year):
-    """
-    Verifica que un diccionario de avión cumpla con todos los requisitos de estructura y tipo.
+    VALID_MONEDAS = {'Dolares', 'Euros', 'Colones'}
 
-    Nota: Solo se valida que el campo 'year' sea un número entero positivo (sin límite superior).
-    """
-    required_fields = ["airplane_id", "model", "manufacturer", "capacity", "year"]
+    @validates("flight_number")
+    def validar_flight_number(self, value):
+        if not re.match(r"^[A-Z]{2}-\d{4}$", value):
+            raise ValidationError("El número de vuelo debe tener el formato 'AA-1234'.")
 
-    for campo in required_fields:
-        if campo not in avion or avion[campo] in [None, ""]:
-            return False, f"El campo '{campo}' está vacío o no está presente."
+    @validates("Moneda")
+    def validar_moneda(self, value):
+        if value not in self.VALID_MONEDAS:
+            raise ValidationError(f"Moneda no válida. Use: {', '.join(self.VALID_MONEDAS)}")
 
-    if not isinstance(avion["airplane_id"], int) or avion["airplane_id"] <= 0:
-        return False, "El 'airplane_id' debe ser un número entero positivo."
+    @validates("airplane_route_id")
+    @validates("airplane_id")
+    @validates("price")
+    def validar_enteros_positivos(self, value):
+        if not isinstance(value, int) or value <= 0:
+            raise ValidationError("Debe ser un número entero positivo.")
 
-    if not isinstance(avion["model"], str) or not avion["model"].strip():
-        return False, "El 'model' debe ser una cadena de texto no vacía."
+    @validates("departure")
+    @validates("arrival")
+    def validar_no_vacios(self, value):
+        if not isinstance(value, str) or not value.strip():
+            raise ValidationError("Este campo no puede estar vacío.")
 
-    if not isinstance(avion["manufacturer"], str) or not avion["manufacturer"].strip():
-        return False, "El 'manufacturer' debe ser una cadena de texto no vacía."
+    @validates("departure_time")
+    @validates("arrival_time")
+    def validar_fecha_formato_espanol(self, value):
+        traducido = traducir_mes_espanol_a_ingles(value)
+        try:
+            parser.parse(traducido)
+        except Exception:
+            raise ValidationError("Formato de fecha inválido. Usa: 'Marzo 30, 2025 - 16:46:19'")
 
-    if not isinstance(avion["capacity"], int) or avion["capacity"] <= 0:
-        return False, "El 'capacity' debe ser un número entero positivo."
+airplane_route_schema = AirplaneRouteSchema()
+airplane_routes_schema = AirplaneRouteSchema(many=True)
 
-    if isinstance(avion["year"], str) and avion["year"].isdigit():
-      avion["year"] = int(avion["year"])
-
-    if not isinstance(avion["year"], int) or avion["year"] <= 0:
-      return False, "El 'year' debe ser un número entero positivo."
-
-    return True, None
-
-
-############################################################################################################
-## YA REVISADO 4/28 2:08 AM
-## Endpoint para obtener la lista completa de aviones
-@app.route('/get_airplanes', methods=['GET'])
-def get_airplanes():
-    """
-    Summary: Obtiene la lista completa de aviones
-    Description:
-      Devuelve la lista completa de aviones disponibles en el sistema.
-      Si no hay aviones registrados, devuelve un mensaje indicando que no hay registros.
-    ---
-    tags:
-      - Airplanes
-    responses:
-      200:
-        description: Lista de aviones obtenida correctamente
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/definitions/AirplaneSchema'
-      500:
-        description: Error interno o estructura de datos inválida
-        content:
-          application/json:
-            schema:
-              $ref: '#/definitions/ErrorSchema'
-    """
-    import time
-    start = time.time()
-    try:
-        if not isinstance(airplanes, list):
-            logging.error("❌ 'airplanes' no es una lista.")
-            return jsonify({'message': 'Estructura interna inválida.'}), 500
-
-        if not airplanes:
-            logging.info("📭 No hay aviones registrados.")
-            return jsonify({'message': 'No hay aviones registrados actualmente.'}), 200
-
-        # Validar duplicados de ID
-        seen_ids = set()
-        for a in airplanes:
-            aid = a.get('airplane_id')
-            if aid in seen_ids:
-                return jsonify({
-                    'message': 'Error de datos: ID de avión duplicado.',
-                    'errors': { 'airplane_id': [f'Duplicado: {aid}'] }
-                }), 500
-            seen_ids.add(aid)
-
-        # Validar con Marshmallow
-        schema = AirplaneSchema(many=True)
-        errors = schema.validate(airplanes)
-        if errors:
-            logging.warning("❌ Errores de validación en los datos de aviones.")
-            return jsonify({
-                'message': 'Errores de validación detectados',
-                'errors': errors
-            }), 500
-
-        elapsed = round(time.time() - start, 2)
-        logging.info(f"✅ Se retornaron {len(airplanes)} aviones en {elapsed} segundos.")
-        return jsonify(airplanes), 200
-
-    except Exception:
-        logging.exception("❌ Error inesperado al obtener los aviones.")
-        return jsonify({
-            'message': 'Error interno del servidor.',
-            'errors': { 'exception': ['Ocurrió un error inesperado.'] }
-        }), 500
-
-
-############################################################################################################
-
-def find_airplane(airplane_id):
-    return next((airplane for airplane in airplanes if airplane['airplane_id'] == airplane_id), None)
-
-
-############################################################################################################
-## REVISADO 4-28 2:44 AM
-## Endpoint para obtener un avión por su ID
-@app.route('/get_airplane_by_id/<int:airplane_id>', methods=['GET'])
-def get_airplane_by_id(airplane_id):
-    """
-    Summary: Obtiene un avión por su ID
-    Description:
-      Devuelve un avión específico por su ID.
-      Si el parámetro no es válido, devuelve un 400.
-      Si no se encuentra el avión, devuelve un 404.
-    ---
-    tags:
-      - Airplanes
-    parameters:
-      - name: airplane_id
-        in: path
-        description: ID del avión (debe ser un entero positivo)
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-    responses:
-      200:
-        description: Avión encontrado
-        content:
-          application/json:
-            schema:
-              $ref: '#/definitions/AirplaneSchema'
-      400:
-        description: Parámetro inválido
-        content:
-          application/json:
-            schema:
-              $ref: '#/definitions/ErrorSchema'
-      404:
-        description: Avión no encontrado
-        content:
-          application/json:
-            schema:
-              $ref: '#/definitions/ErrorSchema'
-      500:
-        description: Error interno del servidor
-        content:
-          application/json:
-            schema:
-              $ref: '#/definitions/ErrorSchema'
-    """
-    try:
-        # 1) Validación de parámetro
-        if airplane_id <= 0:
-            return jsonify({
-                'message': 'El ID del avión debe ser un entero positivo.',
-                'errors': { 'airplane_id': ['Debe ser mayor que cero.'] }
-            }), 400
-
-        # 2) Búsqueda en memoria
-        airplane = next((a for a in airplanes if a['airplane_id'] == airplane_id), None)
-        if not airplane:
-            return jsonify({
-                'message': f'Avión con ID {airplane_id} no encontrado.',
-                'errors': {}
-            }), 404
-
-        # 3) (Opcional) última validación con Marshmallow
-        schema = AirplaneSchema()
-        schema.load(airplane)
-
-        return jsonify(airplane), 200
-
-    except Exception:
-        logging.exception("❌ Error inesperado al obtener el avión.")
-        return jsonify({
-            'message': 'Error interno del servidor.',
-            'errors': { 'exception': ['Ocurrió un error inesperado.'] }
-        }), 500
-
-
-############################################################################################################
-## Todo el proceso para agregar un avión
-## Registrar un nuevo avión - REVISADO
-# Función para detectar claves duplicadas en JSON crudo
+# -----------------------------
+# Utilidades JSON
+# -----------------------------
 def detectar_claves_duplicadas(raw_data):
     try:
         claves = []
@@ -503,34 +298,172 @@ def detectar_claves_duplicadas(raw_data):
         logging.warning("No se pudo analizar duplicados en el JSON: %s", str(e))
         return []
 
-# Función para validar campos extra
-def validar_campos_extra(data, expected_fields):
-    return list(set(data) - expected_fields)
+# -----------------------------
+# Utilidades fechas
+# -----------------------------
+meses_es = {
+    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+    5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+}
+MESES_ES_A_EN = {
+    "enero": "january", "febrero": "february", "marzo": "march",
+    "abril": "april", "mayo": "may", "junio": "june",
+    "julio": "july", "agosto": "august", "septiembre": "september",
+    "octubre": "october", "noviembre": "november", "diciembre": "december"
+}
+try:
+    locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
+except locale.Error:
+    try:
+        locale.setlocale(locale.LC_TIME, "es_ES")
+    except locale.Error:
+        locale.setlocale(locale.LC_TIME, "")
 
-# Función para validar campos faltantes
-def validar_campos_faltantes(data, expected_fields):
-    return [campo for campo in expected_fields if campo not in data]
+def traducir_mes_espanol_a_ingles(fecha_str: str) -> str:
+    for mes_es, mes_en in MESES_ES_A_EN.items():
+        if mes_es in fecha_str.lower():
+            return re.sub(mes_es, mes_en, fecha_str, flags=re.IGNORECASE)
+    return fecha_str
 
+def formatear_fecha(fecha: datetime) -> str:
+    return fecha.strftime("%B %d, %Y - %H:%M:%S").capitalize()
 
-############################################################################################################
-## Revisado 4-28 2:55 AM
+def calcular_duracion(departure: datetime, arrival: datetime) -> str:
+    duracion = arrival - departure
+    horas, resto = divmod(duracion.total_seconds(), 3600)
+    minutos = resto // 60
+    return f"{int(horas)} horas {int(minutos)} minutos"
 
-## Endpoint para agregar un nuevo avión
+VALID_MONEDAS = {'Dolares', 'Euros', 'Colones'}
+
+# -----------------------------
+# Seed de rutas iniciales
+# -----------------------------
+with STORE_LOCK:
+    available_airplanes = [a['airplane_id'] for a in airplanes]
+    random.shuffle(available_airplanes)
+    for i in range(1, 4):
+        if not available_airplanes:
+            break
+        airplane_id = available_airplanes.pop()
+        departure_time = fake_airplane.date_time_this_year()
+        arrival_time = departure_time + timedelta(hours=random.randint(1, 12), minutes=random.randint(0, 59))
+
+        def formatear_es(fecha):
+            mes = meses_es[fecha.month]
+            return f"{mes} {fecha.day}, {fecha.year} - {fecha.strftime('%H:%M:%S')}"
+
+        duracion = arrival_time - departure_time
+        horas, resto = divmod(duracion.total_seconds(), 3600)
+        minutos = resto // 60
+        flight_time = f"{int(horas)} horas {int(minutos)} minutos"
+        airplanes_routes.append({
+            'airplane_route_id': i,
+            'airplane_id': airplane_id,
+            'flight_number': generate_flight_number(),
+            'departure': fake_airplane.airport_name(),
+            'departure_time': formatear_es(departure_time),
+            'arrival': fake_airplane.airport_name(),
+            'arrival_time': formatear_es(arrival_time),
+            'flight_time': flight_time,
+            'price': fake_airplane.random_int(min=60000, max=150000),
+            'Moneda': 'Colones'
+        })
+
+# -----------------------------
+# Endpoints de diagnóstico
+# -----------------------------
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok", "instance_id": INSTANCE_ID}), 200
+
+@app.route('/__state', methods=['GET'])
+def __state():
+    with STORE_LOCK:
+        return jsonify({
+            "instance_id": INSTANCE_ID,
+            "airplanes_count": len(airplanes),
+            "airplane_ids": sorted([a["airplane_id"] for a in airplanes]),
+            "routes_count": len(airplanes_routes)
+        }), 200
+
+# -----------------------------
+# Endpoints Airplanes
+# -----------------------------
+@app.route('/get_airplanes', methods=['GET'])
+def get_airplanes():
+    """
+    Summary: Obtiene la lista completa de aviones
+    ---
+    tags: [Airplanes]
+    responses:
+      200:
+        description: Lista de aviones
+      500:
+        description: Error interno
+    """
+    try:
+        with STORE_LOCK:
+            if not isinstance(airplanes, list):
+                return jsonify({'message': 'Estructura interna inválida.'}), 500
+            if not airplanes:
+                return jsonify({'message': 'No hay aviones registrados actualmente.'}), 200
+            seen_ids = set()
+            for a in airplanes:
+                aid = a.get('airplane_id')
+                if aid in seen_ids:
+                    return jsonify({
+                        'message': 'Error de datos: ID de avión duplicado.',
+                        'errors': {'airplane_id': [f'Duplicado: {aid}']}
+                    }), 500
+                seen_ids.add(aid)
+            errors = airplane_list_schema.validate(airplanes)
+            if errors:
+                return jsonify({'message': 'Errores de validación detectados', 'errors': errors}), 500
+            return jsonify(airplane_list_schema.dump(airplanes)), 200
+    except Exception:
+        logging.exception("Error en get_airplanes")
+        return jsonify({'message': 'Error interno del servidor.'}), 500
+
+@app.route("/get_airplane_by_id/<int:airplane_id>", methods=["GET"])
+def get_airplane_by_id(airplane_id: int):
+    """
+    Obtiene un avión por su ID.
+    ---
+    tags: [Airplanes]
+    parameters:
+      - name: airplane_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Avión
+      400:
+        description: Parámetro inválido
+      404:
+        description: No encontrado
+    """
+    if airplane_id <= 0:
+        return jsonify({"message": "El ID del avión debe ser un entero positivo.",
+                        "errors": {"airplane_id": ["Debe ser mayor que cero."]}}), 400
+    try:
+        with STORE_LOCK:
+            airplane = airplanes_by_id.get(airplane_id)
+            if not airplane:
+                return jsonify({"message": f"Avión {airplane_id} no encontrado.", "errors": {}}), 404
+            return jsonify(airplane_schema.dump(airplane)), 200
+    except Exception:
+        logging.exception("Error en get_airplane_by_id")
+        return jsonify({"message": "Error interno del servidor."}), 500
+
 @app.route('/add_airplane', methods=['POST'])
 def add_airplane():
     """
     Summary: Agrega un nuevo avión
-    Description:
-      Recibe un JSON con los datos de un avión y lo registra en el sistema,
-      generando automáticamente sus asientos.
-      - Detecta claves duplicadas en el JSON bruto.
-      - Valida campos extra y faltantes.
-      - Valida con Marshmallow.
-      - Comprueba unicidad POR CONTENIDO (modelo, fabricante, año, capacidad).
-      - Genera asientos según la capacidad indicada.
     ---
-    tags:
-      - Airplanes
+    tags: [Airplanes]
     parameters:
       - name: body
         in: body
@@ -540,29 +473,12 @@ def add_airplane():
     responses:
       201:
         description: Avión agregado con éxito
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  example: "Avión y asientos agregados con éxito"
       400:
         description: Datos inválidos
-        content:
-          application/json:
-            schema:
-              $ref: '#/definitions/ErrorSchema'
       500:
-        description: Error interno del servidor
-        content:
-          application/json:
-            schema:
-              $ref: '#/definitions/ErrorSchema'
+        description: Error interno
     """
     try:
-        # 1) Detectar claves duplicadas en el JSON bruto
         raw_json = request.data.decode('utf-8')
         duplicadas = detectar_claves_duplicadas(raw_json)
         if duplicadas:
@@ -571,7 +487,6 @@ def add_airplane():
                 'errors': {'json': [f'Duplicada(s): {", ".join(duplicadas)}']}
             }), 400
 
-        # 2) Parsear y validar presencia de cuerpo
         data = request.get_json()
         if not data:
             return jsonify({
@@ -582,92 +497,54 @@ def add_airplane():
         expected = {"airplane_id", "model", "manufacturer", "year", "capacity"}
         extras = set(data) - expected
         faltantes = expected - set(data)
-
         if extras:
-            return jsonify({
-                'message': 'Campos no válidos detectados.',
-                'errors': {'extras': list(extras)}
-            }), 400
+            return jsonify({'message': 'Campos no válidos detectados.', 'errors': {'extras': list(extras)}}), 400
         if faltantes:
-            return jsonify({
-                'message': 'Faltan campos obligatorios.',
-                'errors': {'faltantes': list(faltantes)}
-            }), 400
+            return jsonify({'message': 'Faltan campos obligatorios.', 'errors': {'faltantes': list(faltantes)}}), 400
 
-        # 3) Validación de tipos/límites básicos
         if not isinstance(data['year'], int) or data['year'] <= 0:
-            return jsonify({
-                'message': "El campo 'year' debe ser un entero positivo.",
-                'errors': {'year': ['Debe ser entero > 0']}
-            }), 400
+            return jsonify({'message': "El campo 'year' debe ser un entero positivo.",
+                            'errors': {'year': ['Debe ser entero > 0']}}), 400
 
-        # 4) Validación completa con Marshmallow
-        errors = airplane_Schema.validate(data)
+        errors = airplane_schema.validate(data)
         if errors:
-            return jsonify({
-                'message': 'Errores de validación.',
-                'errors': errors
-            }), 400
+            return jsonify({'message': 'Errores de validación.', 'errors': errors}), 400
 
-        # 5) Verificar unicidad de ID
-        if any(a['airplane_id'] == data['airplane_id'] for a in airplanes):
-            return jsonify({
-                'message': 'Ya existe un avión con ese ID.',
-                'errors': {'airplane_id': ['Duplicado']}
-            }), 400
+        with STORE_LOCK:
+            if data['airplane_id'] in airplanes_by_id:
+                return jsonify({'message': 'Ya existe un avión con ese ID.',
+                                'errors': {'airplane_id': ['Duplicado']}}), 400
 
-        # 5.1) Verificar unicidad POR CONTENIDO (modelo+fabricante+año+capacidad)
-        existente = next((
-            a for a in airplanes
-            if a['model'] == data['model']
-            and a['manufacturer'] == data['manufacturer']
-            and a['year'] == data['year']
-            and a['capacity'] == data['capacity']
-        ), None)
-        if existente:
-            return jsonify({
-                'message': f"Ya existe un avión con los mismos datos (modelo, fabricante, año, capacidad) con ID {existente['airplane_id']}.",
-                'errors': {'duplicate': [f"ID existente: {existente['airplane_id']}"]}
-            }), 400
+            existente = next((
+                a for a in airplanes
+                if a['model'] == data['model']
+                and a['manufacturer'] == data['manufacturer']
+                and a['year'] == data['year']
+                and a['capacity'] == data['capacity']
+            ), None)
+            if existente:
+                return jsonify({
+                    'message': f"Ya existe un avión con los mismos datos con ID {existente['airplane_id']}.",
+                    'errors': {'duplicate': [f"ID existente: {existente['airplane_id']}"]}
+                }), 400
 
-        # 6) Guardar y generar asientos
-        nuevo = airplane_Schema.load(data)
-        airplanes.append(nuevo)
+            nuevo = airplane_schema.load(data)
+            airplanes.append(nuevo)
+            airplanes_by_id[nuevo['airplane_id']] = nuevo
 
-        nuevos_asientos = generar_asientos_para_avion(
-            nuevo['airplane_id'],
-            capacidad=nuevo['capacity']
-        )
-        seats.extend(nuevos_asientos)
+            nuevos_asientos = generar_asientos_para_avion(
+                nuevo['airplane_id'],
+                capacidad=nuevo['capacity']
+            )
+            seats.extend(nuevos_asientos)
 
-        logging.info(f"✈️ Avión agregado: {nuevo}")
-        return jsonify({'message': 'Avión y asientos agregados con éxito'}), 201
+            logging.info(f"✈️ Avión agregado: {nuevo}")
+            return jsonify({'message': 'Avión y asientos agregados con éxito', 'airplane': nuevo}), 201
 
     except Exception:
-        logging.exception("❌ Error inesperado al agregar avión.")
-        return jsonify({
-            'message': 'Error interno del servidor.',
-            'errors': {'exception': ['Ocurrió un error inesperado.']}
-        }), 500
+        logging.exception("Error inesperado al agregar avión.")
+        return jsonify({'message': 'Error interno del servidor.'}), 500
 
-
-############################################################################################################
-## REVISADO
-
-def detectar_claves_duplicadas(raw_data):
-    claves = []
-    def hook(pairs):
-        claves.extend(k for k, _ in pairs)
-        return dict(pairs)
-    try:
-        json.loads(raw_data, object_pairs_hook=hook)
-        return [k for k, v in Counter(claves).items() if v > 1]
-    except Exception:
-        return []
-
-
-############################################################################################################
-## REVISADO 4-28 3:08 AM
 
 ## Actualizar un avión existente por su ID
 @app.route('/update_airplane/<int:airplane_id>', methods=['PUT'])
@@ -774,39 +651,46 @@ def update_airplane(airplane_id):
         if extras:
             return jsonify({
                 'message': 'Se encontraron campos no válidos.',
-                'errors': {'extras': list(extras)}
+                'errors': {'extras': sorted(list(extras))}
             }), 400
         if faltantes:
             return jsonify({
                 'message': 'Faltan campos obligatorios.',
-                'errors': {'faltantes': list(faltantes)}
+                'errors': {'faltantes': sorted(list(faltantes))}
             }), 400
 
-        # 5) Verificar existencia del avión
-        airplane = find_airplane(airplane_id)
-        if not airplane:
-            return jsonify({
-                'message': f'Avión con ID {airplane_id} no encontrado.',
-                'errors': {}
-            }), 404
+        # 5) Buscar avión + validar con schema
+        with STORE_LOCK:
+            airplane = airplanes_by_id.get(airplane_id)
+            if not airplane:
+                return jsonify({
+                    'message': f'Avión con ID {airplane_id} no encontrado.',
+                    'errors': {}
+                }), 404
 
-        # 6) Validar con Marshmallow
-        full = {'airplane_id': airplane_id, **data}
-        errors = airplane_Schema.validate(full)
-        if errors:
-            return jsonify({
-                'message': 'Errores de validación.',
-                'errors': errors
-            }), 400
+            # Validación completa con Marshmallow usando el ID del path
+            full_payload = {'airplane_id': airplane_id, **data}
+            errors = airplane_schema.validate(full_payload)  # <-- nombre correcto
+            if errors:
+                return jsonify({
+                    'message': 'Errores de validación.',
+                    'errors': errors
+                }), 400
 
-        # 7) Sin cambios reales
-        if all(airplane.get(k) == data.get(k) for k in expected):
-            return jsonify({
-                'message': 'No se realizaron cambios porque los datos son idénticos.'
-            }), 200
+            # 6) Evitar no-op
+            if all(airplane.get(k) == data.get(k) for k in expected):
+                return jsonify({
+                    'message': 'No se realizaron cambios porque los datos son idénticos.'
+                }), 200
 
-        # 8) Actualizar y responder
-        airplane.update(data)
+            # 7) Actualizar
+            airplane.update({
+                'model': data['model'],
+                'manufacturer': data['manufacturer'],
+                'year': data['year'],
+                'capacity': data['capacity'],
+            })
+
         logging.info(f'✏️ Avión con ID={airplane_id} actualizado correctamente.')
         return jsonify({'message': 'Avión actualizado con éxito'}), 200
 
@@ -816,14 +700,6 @@ def update_airplane(airplane_id):
             'message': 'Error interno del servidor.',
             'errors': {'exception': ['Ocurrió un error inesperado.']}
         }), 500
-
-
-############################################################################################################
-
-
-# Manejador para cortar la ejecución si se excede el tiempo
-def timeout_handler(signum, frame):
-    raise TimeoutError("⏱️ Tiempo de espera agotado en la operación.")
 
 
 @app.route('/delete_airplane_by_id/<int:airplane_id>', methods=['DELETE'])
@@ -875,43 +751,35 @@ def delete_airplane_by_id(airplane_id):
           $ref: '#/definitions/ErrorSchema'
     """
     try:
-        # 1) Validar parámetro
         if airplane_id <= 0:
             return jsonify({
                 'message': 'El ID del avión debe ser un entero positivo.',
                 'errors': {'airplane_id': ['Debe ser mayor que cero.']}
             }), 400
 
-        # 2) Validar estructuras internas
-        if not isinstance(airplanes, list) or not isinstance(seats, list):
-            return jsonify({
-                'message': 'Estructura interna inválida.',
-                'errors': {}
-            }), 500
+        with STORE_LOCK:
+          if not isinstance(airplanes, list) or not isinstance(seats, list):
+              return jsonify({'message': 'Estructura interna inválida.', 'errors': {}}), 500
 
-        # 3) Verificar existencia de aviones
-        if not airplanes:
-            return jsonify({
-                'message': 'No hay aviones registrados en el sistema.',
-                'errors': {}
-            }), 404
+          if not airplanes:
+              return jsonify({'message': 'No hay aviones registrados en el sistema.', 'errors': {}}), 404
 
-        # 4) Buscar el avión
-        airplane = next((a for a in airplanes if a.get('airplane_id') == airplane_id), None)
-        if not airplane:
-            return jsonify({
-                'message': f'Avión con ID {airplane_id} no encontrado.',
-                'errors': {}
-            }), 404
+          # Busca el avión
+          airplane = next((a for a in airplanes if a.get('airplane_id') == airplane_id), None)
+          if not airplane:
+              return jsonify({'message': f'Avión con ID {airplane_id} no encontrado.', 'errors': {}}), 404
 
-        # 5) Contar y eliminar asientos asociados
-        count = sum(1 for s in seats if s.get('airplane_id') == airplane_id)
-        seats[:] = [s for s in seats if s.get('airplane_id') != airplane_id]
+          # Quita asientos asociados
+          count = sum(1 for s in seats if s.get('airplane_id') == airplane_id)
+          seats[:] = [s for s in seats if s.get('airplane_id') != airplane_id]
 
-        # 6) Eliminar el avión
-        airplanes.remove(airplane)
+          # Quita de la lista y del índice
+          airplanes.remove(airplane)
+          airplanes_by_id.pop(airplane_id, None)   # <- clave del fix
+          # opcional: reindexar para consistencia total
+          # reindex_airplanes()
+
         logging.info(f"🗑️ Avión eliminado: ID={airplane_id}, Asientos eliminados={count}")
-
         return jsonify({
             'message': f'Avión con ID {airplane_id} eliminado exitosamente.',
             'asientos_eliminados': count
@@ -919,56 +787,12 @@ def delete_airplane_by_id(airplane_id):
 
     except Exception:
         logging.exception("❌ Error inesperado al eliminar el avión.")
-        return jsonify({
-            'message': 'Error interno del servidor.',
-            'errors': {'exception': ['Ocurrió un error inesperado.']}
-        }), 500
+        return jsonify({'message': 'Error interno del servidor.', 'errors': {'exception': ['Ocurrió un error inesperado.']}}), 500
 
 
-############################################################################################################
-############################################################################################################
-############################################################################################################
-### Aqui termina Airplanes datos
-############################################################################################################
-############################################################################################################
-############################################################################################################
-
-
-############################################################################################################
-############################################################################################################
-############################################################################################################
-### Aqui empieza Airplane seats datos
-############################################################################################################
-############################################################################################################
-############################################################################################################
-
-
-## Definición del esquema para validar los datos de los asientos de aviones
-class AirplaneSeatSchema(Schema):
-    airplane_id = fields.Int(required=True, validate=lambda x: x > 0, error_messages={
-        "required": "El campo 'airplane_id' es obligatorio.",
-        "invalid": "Debe ser un número entero positivo."
-    })
-
-    seat_number = fields.Str(required=True, error_messages={
-        "required": "El campo 'seat_number' es obligatorio.",
-        "invalid": "Debe ser una cadena de texto no vacía."
-    })
-
-    status = fields.Str(required=True, validate=lambda x: x in ["Libre", "Reservado", "Pagado"], error_messages={
-        "required": "El campo 'status' es obligatorio.",
-        "invalid": "Debe ser 'Libre', 'Reservado', 'Pagado'."
-    })
-
-    class Meta:
-        unknown = RAISE
-
-
-## Instanciamos el esquema para usarlo para validar mas adelante
-airplane_seat_schema = AirplaneSeatSchema(many=True)
-airplane_seats_schema = AirplaneSeatSchema(many=True)
-
-
+# -----------------------------
+# Endpoints Seats
+# -----------------------------
 ## Obtener todos los asientos de un avión específico
 @app.route('/get_airplane_seats/<int:airplane_id>/seats', methods=['GET'])
 def get_airplane_seats(airplane_id):
@@ -1020,35 +844,36 @@ def get_airplane_seats(airplane_id):
                 'errors': {'airplane_id': ['Debe ser mayor que cero.']}
             }), 400
 
-        # Estructuras internas
-        if not isinstance(airplanes, list) or not isinstance(seats, list):
-            return jsonify({
-                'message': 'Estructura interna inválida.',
-                'errors': {}
-            }), 500
+        with STORE_LOCK:
+          # Estructuras internas
+          if not isinstance(airplanes, list) or not isinstance(seats, list):
+              return jsonify({
+                  'message': 'Estructura interna inválida.',
+                  'errors': {}
+              }), 500
 
-        # Verificar existencia del avión
-        if not any(a.get('airplane_id') == airplane_id for a in airplanes):
-            return jsonify({
-                'message': f'Avión con ID {airplane_id} no encontrado.',
-                'errors': {}
-            }), 404
+          # Verificar existencia del avión
+          if not any(a.get('airplane_id') == airplane_id for a in airplanes):
+              return jsonify({
+                  'message': f'Avión con ID {airplane_id} no encontrado.',
+                  'errors': {}
+              }), 404
 
-        # Filtrar asientos
-        lista = [s for s in seats if s.get('airplane_id') == airplane_id]
-        if not lista:
-            return jsonify({
-                'message': f'No hay asientos registrados para el avión {airplane_id}.',
-                'errors': {}
-            }), 404
+          # Filtrar asientos
+          lista = [s for s in seats if s.get('airplane_id') == airplane_id]
+          if not lista:
+              return jsonify({
+                  'message': f'No hay asientos registrados para el avión {airplane_id}.',
+                  'errors': {}
+              }), 404
 
-        # Validación con Marshmallow
-        errors = airplane_seats_schema.validate(lista)
-        if errors:
-            return jsonify({
-                'message': 'Error en los datos de los asientos.',
-                'errors': errors
-            }), 500
+          # Validación con Marshmallow
+          errors = airplane_seats_schema.validate(lista)
+          if errors:
+              return jsonify({
+                  'message': 'Error en los datos de los asientos.',
+                  'errors': errors
+              }), 500
 
         return jsonify(lista), 200
 
@@ -1058,9 +883,6 @@ def get_airplane_seats(airplane_id):
             'message': 'Error interno del servidor.',
             'errors': {'exception': ['Ocurrió un error inesperado.']}
         }), 500
-
-
-############################################################################################################
 
 
 ## Obtener todos los asientos agrupados por avión
@@ -1092,39 +914,40 @@ def get_seats_grouped_by_airplane():
           $ref: '#/definitions/ErrorSchema'
     """
     try:
-        # Validar lista de asientos
-        if not isinstance(seats, list):
-            return jsonify({
-                'message': 'Estructura interna de asientos inválida.',
-                'errors': {}
-            }), 500
+        with STORE_LOCK:
+          # Validar lista de asientos
+          if not isinstance(seats, list):
+              return jsonify({
+                  'message': 'Estructura interna de asientos inválida.',
+                  'errors': {}
+              }), 500
 
-        if not seats:
-            return jsonify({
-                'message': 'No hay asientos registrados en el sistema.',
-                'errors': {}
-            }), 200
+          if not seats:
+              return jsonify({
+                  'message': 'No hay asientos registrados en el sistema.',
+                  'errors': {}
+              }), 200
 
-        # Agrupar
-        grouped = {}
-        for s in seats:
-            aid = s.get('airplane_id')
-            if not isinstance(aid, int) or aid <= 0:
-                continue
-            grouped.setdefault(aid, []).append({
-                'airplane_id': aid,
-                'seat_number': s.get('seat_number'),
-                'status': s.get('status')
-            })
+          # Agrupar
+          grouped = {}
+          for s in seats:
+              aid = s.get('airplane_id')
+              if not isinstance(aid, int) or aid <= 0:
+                  continue
+              grouped.setdefault(aid, []).append({
+                  'airplane_id': aid,
+                  'seat_number': s.get('seat_number'),
+                  'status': s.get('status')
+              })
 
-        # Validar cada grupo
-        for aid, group in grouped.items():
-            errors = airplane_seats_schema.validate(group)
-            if errors:
-                return jsonify({
-                    'message': f'Error en los datos de los asientos del avión {aid}.',
-                    'errors': errors
-                }), 500
+          # Validar cada grupo
+          for aid, group in grouped.items():
+              errors = airplane_seats_schema.validate(group)
+              if errors:
+                  return jsonify({
+                      'message': f'Error en los datos de los asientos del avión {aid}.',
+                      'errors': errors
+                  }), 500
 
         return jsonify(grouped), 200
 
@@ -1136,185 +959,145 @@ def get_seats_grouped_by_airplane():
         }), 500
 
 
-############################################################################################################
-############################################################################################################
-############################################################################################################
-### Aqui termina Airplane seats datos
-############################################################################################################
-############################################################################################################
-############################################################################################################
-
-
-############################################################################################################
-############################################################################################################
-############################################################################################################
-### Aqui inicia Airplanes Routes datos
-############################################################################################################
-############################################################################################################
-############################################################################################################
-
-
-## Definición del esquema para validar los datos de las rutas de aviones
-class AirplaneRouteSchema(Schema):
-    class Meta:
-        unknown = RAISE  # Error si hay campos no definidos
-
-    airplane_route_id = fields.Int(required=True)
-    airplane_id = fields.Int(required=True)
-    flight_number = fields.Str(required=True)
-    departure = fields.Str(required=True)
-    departure_time = fields.Str(required=True)
-    arrival = fields.Str(required=True)
-    arrival_time = fields.Str(required=True)
-    flight_time = fields.Str(dump_only=True)  # Se calcula, no se espera en entrada
-    price = fields.Int(required=True)
-    Moneda = fields.Str(required=True)
-
-    VALID_MONEDAS = {'Dolares', 'Euros', 'Colones'}
-
-    @validates("flight_number")
-    def validar_flight_number(self, value):
-        if not re.match(r"^[A-Z]{2}-\d{4}$", value):
-            raise ValidationError("El número de vuelo debe tener el formato 'AA-1234'.")
-
-    @validates("Moneda")
-    def validar_moneda(self, value):
-        if value not in self.VALID_MONEDAS:
-            raise ValidationError(f"Moneda no válida. Use: {', '.join(self.VALID_MONEDAS)}")
-
-    @validates("airplane_route_id")
-    @validates("airplane_id")
-    @validates("price")
-    def validar_enteros_positivos(self, value):
-        if not isinstance(value, int) or value <= 0:
-            raise ValidationError("Debe ser un número entero positivo.")
-
-    @validates("departure")
-    @validates("arrival")
-    def validar_no_vacios(self, value):
-        if not isinstance(value, str) or not value.strip():
-            raise ValidationError("Este campo no puede estar vacío.")
-
-    @validates("departure_time")
-    @validates("arrival_time")
-    def validar_fecha_formato_espanol(self, value):
-        traducido = traducir_mes_espanol_a_ingles(value)
-        try:
-            parser.parse(traducido)
-        except Exception:
-            raise ValidationError("Formato de fecha inválido. Usa formato como: 'Marzo 30, 2025 - 16:46:19'")
-
-
-############################################################################################################
-
-
-airplane_route_schema = AirplaneRouteSchema()
-
-
-# Definir los meses en español
-meses_es = {
-    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
-    5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
-    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
-}
-
-
-print()  # Salto de línea
-print()  # Salto de línea
-
-# Generar datos de rutas de aviones
-airplanes_routes = []
-used_airplane_ids = set()
-
-# Lista de aviones disponibles
-available_airplanes = [a['airplane_id'] for a in airplanes]  # ✅ dinámica según los datos actuales
-
-random.shuffle(available_airplanes)  # Para que los airplane_id se asignen aleatoriamente
-
-## Cantidad de rutas a generar (1 a 10) seria de 9 rutas, el 10 no se cuenta
-for i in range(1, 4):  # Hasta 10 rutas como máximo si no se repite airplane_id
-    if not available_airplanes:
-        break  # No quedan aviones disponibles sin repetir
-
-    airplane_id = available_airplanes.pop()  # Extraer uno único
-
-    departure_time = fake_airplane.date_time_this_year()
-    arrival_time = departure_time + timedelta(hours=random.randint(1, 12), minutes=random.randint(0, 59))
-
-    def formatear_fecha(fecha):
-        mes = meses_es[fecha.month]
-        return f"{mes} {fecha.day}, {fecha.year} - {fecha.strftime('%H:%M:%S')}"
-
-    duracion = arrival_time - departure_time
-    horas, resto = divmod(duracion.total_seconds(), 3600)
-    minutos = resto // 60
-    flight_time = f"{int(horas)} horas {int(minutos)} minutos"
-
-    airplanes_routes.append({
-        'airplane_route_id': i,
-        'airplane_id': airplane_id,
-        'flight_number': generate_flight_number(),
-        'departure': fake_airplane.airport_name(),
-        'departure_time': formatear_fecha(departure_time),
-        'arrival': fake_airplane.airport_name(),
-        'arrival_time': formatear_fecha(arrival_time),
-        'flight_time': flight_time,
-        'price': fake_airplane.random_int(min=60000, max=150000),
-        'Moneda': 'Colones'
-    })
-
-
-# Imprimir los datos generados
-for route in airplanes_routes:
-    print(route)
-
-
-## REVISADO
-############################################################################################################
-
-
-# Configurar locale para formato español
-try:
-    locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
-except locale.Error:
+## Actualizar el estado de un asiento específico
+@app.route('/update_seat_status/<int:airplane_id>/seats/<string:seat_number>', methods=['PUT'])
+def update_seat_status(airplane_id, seat_number):
+    """
+    Actualiza el estado de un asiento específico
+    ---
+    tags:
+      - Airplanes Seats
+    parameters:
+      - name: airplane_id
+        in: path
+        type: integer
+        required: true
+        description: ID del avión
+      - name: seat_number
+        in: path
+        type: string
+        required: true
+        description: "Número del asiento (ej: 12A)"
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [Libre, Reservado, Pagado]
+              example: Reservado
+    responses:
+      200:
+        description: Estado del asiento actualizado con éxito
+      400:
+        description: Solicitud inválida
+      404:
+        description: Asiento o avión no encontrado
+    """
     try:
-        locale.setlocale(locale.LC_TIME, "es_ES")
-    except locale.Error:
-        locale.setlocale(locale.LC_TIME, "")
+        # Validar que la lista de asientos sea válida
+        if not isinstance(seats, list):
+            return jsonify({"message": "Error interno: estructura de asientos inválida."}), 500
+
+        # Validar que el avión exista
+        if not any(a['airplane_id'] == airplane_id for a in airplanes):
+            return jsonify({"message": f"Avión con ID {airplane_id} no existe."}), 404
+
+        # Validar longitud del número de asiento
+        if len(seat_number) > 5:
+            return jsonify({"message": "El número de asiento es demasiado largo."}), 400
+
+        # Prevenir keywords inválidas como ALL o *
+        if seat_number.upper() in ["ALL", "*"]:
+            return jsonify({"message": "No está permitido modificar todos los asientos en una sola solicitud."}), 400
+
+        # Validar formato del número de asiento
+        if not re.match(r"^\d+[A-F]$", seat_number.upper()):
+            return jsonify({"message": "Formato de número de asiento inválido. Debe ser como '12A'."}), 400
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"message": "No se recibió cuerpo JSON."}), 400
+
+        nuevo_estado = data.get("status")
+        if nuevo_estado not in ["Libre", "Reservado", "Pagado"]:
+            return jsonify({"message": "Estado inválido. Debe ser 'Libre', 'Reservado', 'Pagado'."}), 400
+
+        with STORE_LOCK:
+          # Buscar el asiento específico
+          asiento = next(
+              (s for s in seats if s["airplane_id"] == airplane_id and s["seat_number"] == seat_number.upper()),
+              None
+          )
+
+          if not asiento:
+              return jsonify({"message": f"Asiento {seat_number} no encontrado en el avión {airplane_id}."}), 404
+
+          if asiento["status"] == nuevo_estado:
+              return jsonify({"message": f"El asiento {seat_number} ya tenía el estado '{nuevo_estado}'."}), 200
+
+          # Actualizar estado
+          asiento["status"] = nuevo_estado
+
+        # Log para auditoría
+        logging.info(f"Estado del asiento {seat_number} en avión {airplane_id} actualizado a {nuevo_estado}")
+
+        return jsonify({
+            "message": f"Estado del asiento {seat_number} actualizado a {nuevo_estado}.",
+            "asiento": asiento
+        }), 200
+
+    except Exception as e:
+        logging.exception("Error al actualizar el estado del asiento.")
+        return jsonify({"message": "Error interno del servidor"}), 500
 
 
-# Diccionario para traducir meses en español a inglés para parser
-MESES_ES_A_EN = {
-    "enero": "january", "febrero": "february", "marzo": "march",
-    "abril": "april", "mayo": "may", "junio": "june",
-    "julio": "july", "agosto": "august", "septiembre": "september",
-    "octubre": "october", "noviembre": "november", "diciembre": "december"
-}
+def get_random_free_seat(airplane_id):
+    try:
+        with STORE_LOCK:
+            for seat in seats:
+                if seat["airplane_id"] == airplane_id and seat["status"] == "Libre":
+                    return seat
+            return None
+    except Exception:
+        logging.exception("Error al buscar asiento libre.")
+        return None
 
+@app.route('/get_random_free_seat/<int:airplane_id>', methods=['GET'])
+def get_random_free_seat_endpoint(airplane_id):
+    seat = get_random_free_seat(airplane_id)
+    if seat:
+        return jsonify(seat), 200
+    return jsonify({'message': 'No hay asientos libres'}), 404
 
-# Función para traducir fecha con mes en español a inglés
-def traducir_mes_espanol_a_ingles(fecha_str: str) -> str:
-    for mes_es, mes_en in MESES_ES_A_EN.items():
-        if mes_es in fecha_str.lower():
-            return re.sub(mes_es, mes_en, fecha_str, flags=re.IGNORECASE)
-    return fecha_str
+@app.route('/free_seat/<int:airplane_id>/seats/<string:seat_number>', methods=['PUT'])
+def liberar_asiento(airplane_id, seat_number):
+    try:
+        with STORE_LOCK:
+            if not isinstance(seats, list) or not isinstance(airplanes, list):
+                return jsonify({'message': 'Estructuras inválidas.'}), 500
+            if airplane_id <= 0:
+                return jsonify({'message': 'El ID del avión debe ser positivo.'}), 400
+            if not any(a['airplane_id'] == airplane_id for a in airplanes):
+                return jsonify({'message': f"Avión con ID {airplane_id} no encontrado."}), 404
+            asiento = next((s for s in seats if s['airplane_id'] == airplane_id and s['seat_number'] == seat_number.upper()), None)
+            if not asiento:
+                return jsonify({'message': f"Asiento {seat_number} no encontrado en el avión {airplane_id}."}), 404
+            if asiento["status"] == "Libre":
+                return jsonify({'message': f"El asiento {seat_number} ya estaba libre."}), 200
+            asiento["status"] = "Libre"
+            logging.info(f"🟢 Asiento {seat_number} del avión {airplane_id} liberado exitosamente.")
+            return jsonify({'message': f"Asiento {seat_number} en avión {airplane_id} fue liberado con éxito.",
+                            'asiento': asiento}), 200
+    except Exception:
+        logging.exception("Error al liberar el asiento.")
+        return jsonify({'message': 'Error interno del servidor'}), 500
 
-def formatear_fecha(fecha: datetime) -> str:
-    return fecha.strftime("%B %d, %Y - %H:%M:%S").capitalize()
-
-def calcular_duracion(departure: datetime, arrival: datetime) -> str:
-    duracion = arrival - departure
-    horas, resto = divmod(duracion.total_seconds(), 3600)
-    minutos = resto // 60
-    return f"{int(horas)} horas {int(minutos)} minutos"
-
-VALID_MONEDAS = {'Dolares', 'Euros', 'Colones'}
-
-def validar_campos_vacios(data, campos):
-    return [f for f in campos if not isinstance(data.get(f), str) or not data[f].strip()]
-
-
-## Revisado 4-28 3:08 AM
+# -----------------------------
+# Endpoints Routes
+# -----------------------------
 ## Agregar una nueva ruta de avión
 @app.route('/add_airplane_route', methods=['POST'])
 def add_airplane_route():
@@ -1385,31 +1168,33 @@ def add_airplane_route():
         # 2) Deserializar y validar esquema
         route = airplane_route_schema.load(data)
 
-        # 3) Verificar existencia de avión
-        if not any(a['airplane_id'] == route['airplane_id'] for a in airplanes):
-            return jsonify({
-                'message': 'El avión especificado no existe.',
-                'errors': {'airplane_id': [f"No existe avión con ID {route['airplane_id']}"]}
-            }), 400
+        with STORE_LOCK:
 
-        # 4) Duplicados por ID o número de vuelo
-        if any(r['airplane_route_id'] == route['airplane_route_id'] for r in airplanes_routes):
-            return jsonify({
-                'message': f"Ya existe una ruta con ID {route['airplane_route_id']}.",
-                'errors': {'airplane_route_id': [f"Duplicado: {route['airplane_route_id']}"]}
-            }), 400
-        if any(r['flight_number'] == route['flight_number'] and r['airplane_id'] == route['airplane_id']
-               for r in airplanes_routes):
-            return jsonify({
-                'message': f"Ya existe la ruta {route['flight_number']} para el avión {route['airplane_id']}.",
-                'errors': {'flight_number': [f"Duplicado: {route['flight_number']}"]}
-            }), 400
-        if any(all(r.get(k) == route.get(k) for k in route) for r in airplanes_routes):
-            existing = next(r for r in airplanes_routes if all(r.get(k) == route.get(k) for k in route))
-            return jsonify({
-                'message': 'Ya existe una ruta con todos los mismos datos.',
-                'errors': {'airplane_route_id': [f"Ya registrada con ID {existing['airplane_route_id']}"]}
-            }), 400
+          # 3) Verificar existencia de avión
+          if not any(a['airplane_id'] == route['airplane_id'] for a in airplanes):
+              return jsonify({
+                  'message': 'El avión especificado no existe.',
+                  'errors': {'airplane_id': [f"No existe avión con ID {route['airplane_id']}"]}
+              }), 400
+
+          # 4) Duplicados por ID o número de vuelo
+          if any(r['airplane_route_id'] == route['airplane_route_id'] for r in airplanes_routes):
+              return jsonify({
+                  'message': f"Ya existe una ruta con ID {route['airplane_route_id']}.",
+                  'errors': {'airplane_route_id': [f"Duplicado: {route['airplane_route_id']}"]}
+              }), 400
+          if any(r['flight_number'] == route['flight_number'] and r['airplane_id'] == route['airplane_id']
+                for r in airplanes_routes):
+              return jsonify({
+                  'message': f"Ya existe la ruta {route['flight_number']} para el avión {route['airplane_id']}.",
+                  'errors': {'flight_number': [f"Duplicado: {route['flight_number']}"]}
+              }), 400
+          if any(all(r.get(k) == route.get(k) for k in route) for r in airplanes_routes):
+              existing = next(r for r in airplanes_routes if all(r.get(k) == route.get(k) for k in route))
+              return jsonify({
+                  'message': 'Ya existe una ruta con todos los mismos datos.',
+                  'errors': {'airplane_route_id': [f"Ya registrada con ID {existing['airplane_route_id']}"]}
+              }), 400
 
         # 5) Validar orden de fechas
         dep_str = traducir_mes_espanol_a_ingles(route['departure_time'])
@@ -1449,9 +1234,6 @@ def add_airplane_route():
         }), 500
 
 
-############################################################################################################
-
-## Revisado 4-28 3:08 AM
 ## Obtener todas las rutas de avión
 @app.route('/get_all_airplanes_routes', methods=['GET'])
 def get_airplanes_routes():
@@ -1490,22 +1272,23 @@ def get_airplanes_routes():
               $ref: '#/definitions/ErrorSchema'
     """
     try:
-        # Verificar estructura de datos
-        if not isinstance(airplanes_routes, list):
-            logging.error("❌ 'airplanes_routes' no es una lista.")
-            return jsonify({
-                'message': 'Error interno: estructura de datos inválida.',
-                'errors': {'airplanes_routes': ['Debe ser una lista.']}
-            }), 500
+        with STORE_LOCK:
+          # Verificar estructura de datos
+          if not isinstance(airplanes_routes, list):
+              logging.error("❌ 'airplanes_routes' no es una lista.")
+              return jsonify({
+                  'message': 'Error interno: estructura de datos inválida.',
+                  'errors': {'airplanes_routes': ['Debe ser una lista.']}
+              }), 500
 
-        # Si no hay rutas registradas
-        if not airplanes_routes:
-            logging.info("📭 No hay rutas registradas actualmente.")
-            return jsonify({'message': 'No hay rutas registradas actualmente.'}), 200
+          # Si no hay rutas registradas
+          if not airplanes_routes:
+              logging.info("📭 No hay rutas registradas actualmente.")
+              return jsonify({'message': 'No hay rutas registradas actualmente.'}), 200
 
-        # Validar y serializar usando Marshmallow
-        schema = AirplaneRouteSchema(many=True)
-        serialized = schema.dump(airplanes_routes)
+          # Validar y serializar usando Marshmallow
+          schema = AirplaneRouteSchema(many=True)
+          serialized = schema.dump(airplanes_routes)
 
         logging.info(f"📦 Se retornaron {len(serialized)} rutas de avión.")
         return jsonify(serialized), 200
@@ -1516,10 +1299,6 @@ def get_airplanes_routes():
             'message': 'Error interno del servidor al obtener las rutas.',
             'errors': {'exception': ['Ocurrió un error inesperado.']}
         }), 500
-
-
-############################################################################################################
-## Revisado 4-28 3:08 AM
 
 
 ## Obtener una ruta de avión por ID
@@ -1576,24 +1355,26 @@ def get_airplanes_route_by_id(airplane_route_id):
                 'errors': {'airplane_route_id': ['Debe ser mayor que cero.']}
             }), 400
 
-        # 2) Verificar la estructura en memoria
-        if not isinstance(airplanes_routes, list):
-            logging.error("❌ 'airplanes_routes' no es una lista.")
-            return jsonify({
-                'message': 'Error interno: estructura de datos inválida.',
-                'errors': {'airplanes_routes': ['Debe ser una lista.']}
-            }), 500
+        with STORE_LOCK:
 
-        # 3) Búsqueda de la ruta
-        route = next((r for r in airplanes_routes if r.get('airplane_route_id') == airplane_route_id), None)
-        if not route:
-            return jsonify({
-                'message': f'Ruta con ID {airplane_route_id} no encontrada.',
-                'errors': {}
-            }), 404
+          # 2) Verificar la estructura en memoria
+          if not isinstance(airplanes_routes, list):
+              logging.error("❌ 'airplanes_routes' no es una lista.")
+              return jsonify({
+                  'message': 'Error interno: estructura de datos inválida.',
+                  'errors': {'airplanes_routes': ['Debe ser una lista.']}
+              }), 500
 
-        # 4) Serializar con Marshmallow
-        serialized = AirplaneRouteSchema().dump(route)
+          # 3) Búsqueda de la ruta
+          route = next((r for r in airplanes_routes if r.get('airplane_route_id') == airplane_route_id), None)
+          if not route:
+              return jsonify({
+                  'message': f'Ruta con ID {airplane_route_id} no encontrada.',
+                  'errors': {}
+              }), 404
+
+          # 4) Serializar con Marshmallow
+          serialized = AirplaneRouteSchema().dump(route)
 
         return jsonify(serialized), 200
 
@@ -1611,9 +1392,6 @@ def get_airplanes_route_by_id(airplane_route_id):
             'errors': {'exception': ['Ocurrió un error inesperado.']}
         }), 500
 
-
-############################################################################################################
-## Revisado 4-28 3:08 AM
 
 ## Actualizar una ruta de avión por airplane_route_id
 @app.route('/update_airplane_route_by_id/<int:airplane_route_id>', methods=['PUT'])
@@ -1726,39 +1504,42 @@ def update_airplane_route_by_id(airplane_route_id):
         # 6) Validar y deserializar con Marshmallow
         updated = AirplaneRouteSchema().load(data)
 
-        # 7) Validar fecha y calcular duración
-        dep_str = traducir_mes_espanol_a_ingles(updated['departure_time'])
-        arr_str = traducir_mes_espanol_a_ingles(updated['arrival_time'])
-        dt_dep = parser.parse(dep_str)
-        dt_arr = parser.parse(arr_str)
-        if dt_arr <= dt_dep:
-            return jsonify({
-                'message': 'La hora de llegada debe ser posterior a la de salida.',
-                'errors': {'arrival_time': ['Debe ser posterior a departure_time.']}
-            }), 400
+        with STORE_LOCK:
 
-        updated['departure_time'] = formatear_fecha(dt_dep)
-        updated['arrival_time']   = formatear_fecha(dt_arr)
-        updated['flight_time']    = calcular_duracion(dt_dep, dt_arr)
+          # 7) Validar fecha y calcular duración
+          dep_str = traducir_mes_espanol_a_ingles(updated['departure_time'])
+          arr_str = traducir_mes_espanol_a_ingles(updated['arrival_time'])
+          dt_dep = parser.parse(dep_str)
+          dt_arr = parser.parse(arr_str)
+          if dt_arr <= dt_dep:
+              return jsonify({
+                  'message': 'La hora de llegada debe ser posterior a la de salida.',
+                  'errors': {'arrival_time': ['Debe ser posterior a departure_time.']}
+              }), 400
 
-        # 8) Comprobar si no hay cambios reales
-        keys_to_compare = [
-            'airplane_id', 'flight_number', 'departure',
-            'departure_time', 'arrival', 'arrival_time',
-            'price', 'Moneda', 'flight_time'
-        ]
-        if all(route.get(k) == updated.get(k) for k in keys_to_compare):
-            return jsonify({
-                'message': 'No se realizaron cambios porque los datos son idénticos.',
-                'route': AirplaneRouteSchema().dump(route)
-            }), 200
+          updated['departure_time'] = formatear_fecha(dt_dep)
+          updated['arrival_time']   = formatear_fecha(dt_arr)
+          updated['flight_time']    = calcular_duracion(dt_dep, dt_arr)
 
-        # 9) Aplicar cambios en memoria
-        route.update(updated)
-        logging.info(f"✏️ Ruta actualizada: ID={airplane_route_id}")
+          # 8) Comprobar si no hay cambios reales
+          keys_to_compare = [
+              'airplane_id', 'flight_number', 'departure',
+              'departure_time', 'arrival', 'arrival_time',
+              'price', 'Moneda', 'flight_time'
+          ]
+          if all(route.get(k) == updated.get(k) for k in keys_to_compare):
+              return jsonify({
+                  'message': 'No se realizaron cambios porque los datos son idénticos.',
+                  'route': AirplaneRouteSchema().dump(route)
+              }), 200
 
-        # 10) Serializar para la respuesta
-        result = AirplaneRouteSchema().dump(route)
+          # 9) Aplicar cambios en memoria
+          route.update(updated)
+          logging.info(f"✏️ Ruta actualizada: ID={airplane_route_id}")
+
+          # 10) Serializar para la respuesta
+          result = AirplaneRouteSchema().dump(route)
+
         return jsonify({
             'message': 'Ruta actualizada con éxito',
             'route': result
@@ -1776,9 +1557,6 @@ def update_airplane_route_by_id(airplane_route_id):
             'message': 'Error interno del servidor.',
             'errors': {'exception': ['Ocurrió un error inesperado.']}
         }), 500
-
-
-############################################################################################################
 
 
 ## Eliminar una ruta de avión por airplane_route_id
@@ -1840,24 +1618,27 @@ def delete_airplane_route_by_id(airplane_route_id):
                 "errors": {"airplane_route_id": ["Debe ser mayor que cero."]}
             }), 400
 
-        # 2) Validar estructura interna
-        if not isinstance(airplanes_routes, list):
-            logging.error("❌ 'airplanes_routes' no es una lista.")
-            return jsonify({
-                "message": "Error interno: estructura de rutas inválida.",
-                "errors": {"airplanes_routes": ["Debe ser una lista."]}
-            }), 500
+        with STORE_LOCK:
 
-        # 3) Buscar la ruta
-        route = next((r for r in airplanes_routes if r.get("airplane_route_id") == airplane_route_id), None)
-        if not route:
-            return jsonify({
-                "message": f"Ruta con ID {airplane_route_id} no encontrada.",
-                "errors": {}
-            }), 404
+          # 2) Validar estructura interna
+          if not isinstance(airplanes_routes, list):
+              logging.error("❌ 'airplanes_routes' no es una lista.")
+              return jsonify({
+                  "message": "Error interno: estructura de rutas inválida.",
+                  "errors": {"airplanes_routes": ["Debe ser una lista."]}
+              }), 500
 
-        # 4) Eliminar
-        airplanes_routes.remove(route)
+          # 3) Buscar la ruta
+          route = next((r for r in airplanes_routes if r.get("airplane_route_id") == airplane_route_id), None)
+          if not route:
+              return jsonify({
+                  "message": f"Ruta con ID {airplane_route_id} no encontrada.",
+                  "errors": {}
+              }), 404
+
+          # 4) Eliminar
+          airplanes_routes.remove(route)
+
         logging.info(f"🗑️ Ruta eliminada: ID={airplane_route_id}")
 
         # 5) Responder éxito
@@ -1871,212 +1652,28 @@ def delete_airplane_route_by_id(airplane_route_id):
         }), 500
 
 
-############################################################################################################
-
-
-####################################
-####################################
-### Aqui termina Airplanes Routes datos
-####################################
-####################################
-
-
-## Actualizar el estado de un asiento específico
-@app.route('/update_seat_status/<int:airplane_id>/seats/<string:seat_number>', methods=['PUT'])
-def update_seat_status(airplane_id, seat_number):
-    """
-    Actualiza el estado de un asiento específico
-    ---
-    tags:
-      - Airplanes Seats
-    parameters:
-      - name: airplane_id
-        in: path
-        type: integer
-        required: true
-        description: ID del avión
-      - name: seat_number
-        in: path
-        type: string
-        required: true
-        description: "Número del asiento (ej: 12A)"
-      - name: body
-        in: body
-        required: true
-        schema:
-          type: object
-          properties:
-            status:
-              type: string
-              enum: [Libre, Reservado, Pagado]
-              example: Reservado
-    responses:
-      200:
-        description: Estado del asiento actualizado con éxito
-      400:
-        description: Solicitud inválida
-      404:
-        description: Asiento o avión no encontrado
-    """
-    try:
-        # Validar que la lista de asientos sea válida
-        if not isinstance(seats, list):
-            return jsonify({"message": "Error interno: estructura de asientos inválida."}), 500
-
-        # Validar que el avión exista
-        if not any(a['airplane_id'] == airplane_id for a in airplanes):
-            return jsonify({"message": f"Avión con ID {airplane_id} no existe."}), 404
-
-        # Validar longitud del número de asiento
-        if len(seat_number) > 5:
-            return jsonify({"message": "El número de asiento es demasiado largo."}), 400
-
-        # Prevenir keywords inválidas como ALL o *
-        if seat_number.upper() in ["ALL", "*"]:
-            return jsonify({"message": "No está permitido modificar todos los asientos en una sola solicitud."}), 400
-
-        # Validar formato del número de asiento
-        if not re.match(r"^\d+[A-F]$", seat_number.upper()):
-            return jsonify({"message": "Formato de número de asiento inválido. Debe ser como '12A'."}), 400
-
-        data = request.get_json()
-        if not data:
-            return jsonify({"message": "No se recibió cuerpo JSON."}), 400
-
-        nuevo_estado = data.get("status")
-        if nuevo_estado not in ["Libre", "Reservado", "Pagado"]:
-            return jsonify({"message": "Estado inválido. Debe ser 'Libre', 'Reservado', 'Pagado'."}), 400
-
-        # Buscar el asiento específico
-        asiento = next(
-            (s for s in seats if s["airplane_id"] == airplane_id and s["seat_number"] == seat_number.upper()),
-            None
-        )
-
-        if not asiento:
-            return jsonify({"message": f"Asiento {seat_number} no encontrado en el avión {airplane_id}."}), 404
-
-        if asiento["status"] == nuevo_estado:
-            return jsonify({"message": f"El asiento {seat_number} ya tenía el estado '{nuevo_estado}'."}), 200
-
-        # Actualizar estado
-        asiento["status"] = nuevo_estado
-
-        # Log para auditoría
-        logging.info(f"Estado del asiento {seat_number} en avión {airplane_id} actualizado a {nuevo_estado}")
-
-        return jsonify({
-            "message": f"Estado del asiento {seat_number} actualizado a {nuevo_estado}.",
-            "asiento": asiento
-        }), 200
-
-    except Exception as e:
-        logging.exception("Error al actualizar el estado del asiento.")
-        return jsonify({"message": "Error interno del servidor"}), 500
-
-
-
-def get_random_free_seat(airplane_id):
-    """
-    Devuelve un asiento libre aleatorio para el avión dado.
-    Si no hay asientos disponibles, retorna un mensaje de advertencia.
-    """
-    try:
-        if not isinstance(seats, list):
-            logging.error("❌ La estructura de datos 'seats' no es válida (no es lista).")
-            return None
-
-        for seat in seats:
-            if seat["airplane_id"] == airplane_id and seat["status"] == "Libre":
-                logging.info(f"✅ Asiento libre encontrado: {seat['seat_number']} para avión {airplane_id}")
-                return seat
-
-        logging.info(f"⚠️ No hay asientos disponibles para el avión con ID {airplane_id}")
-        return None
-
-    except Exception as e:
-        logging.exception("❌ Error al buscar asiento libre para el avión.")
-        return None
-
-
-@app.route('/get_random_free_seat/<int:airplane_id>', methods=['GET'])
-def get_random_free_seat_endpoint(airplane_id):
-    seat = get_random_free_seat(airplane_id)
-    if seat:
-        return jsonify(seat), 200
-    return jsonify({'message': 'No hay asientos libres'}), 404
-
-
-@app.route('/free_seat/<int:airplane_id>/seats/<string:seat_number>', methods=['PUT'])
-def liberar_asiento(airplane_id, seat_number):
-    try:
-        # Validar estructuras de datos
-        if not isinstance(seats, list):
-            return jsonify({'message': 'Estructura de asientos inválida.'}), 500
-
-        if not isinstance(airplanes, list):
-            return jsonify({'message': 'Estructura de aviones inválida.'}), 500
-
-        # Validar ID positivo
-        if airplane_id <= 0:
-            return jsonify({'message': 'El ID del avión debe ser positivo.'}), 400
-
-        # Validar existencia del avión
-        if not any(a['airplane_id'] == airplane_id for a in airplanes):
-            return jsonify({'message': f"Avión con ID {airplane_id} no encontrado."}), 404
-
-        # Buscar el asiento
-        asiento = next((s for s in seats if s['airplane_id'] == airplane_id and s['seat_number'] == seat_number.upper()), None)
-        if not asiento:
-            return jsonify({'message': f"Asiento {seat_number} no encontrado en el avión {airplane_id}."}), 404
-
-        # Si ya está libre
-        if asiento["status"] == "Libre":
-            return jsonify({'message': f"El asiento {seat_number} ya estaba libre."}), 200
-
-        # Liberar asiento
-        asiento["status"] = "Libre"
-        logging.info(f"🟢 Asiento {seat_number} del avión {airplane_id} liberado exitosamente.")
-        return jsonify({
-            'message': f"Asiento {seat_number} en avión {airplane_id} fue liberado con éxito.",
-            'asiento': asiento
-        }), 200
-
-    except Exception as e:
-        logging.exception("❌ Error al liberar el asiento.")
-        return jsonify({'message': 'Error interno del servidor'}), 500
-
-
 # -----------------------------
-# Manejadores globales de errores
+# Handlers globales
 # -----------------------------
-
 @app.errorhandler(404)
 def handle_not_found(e):
-    """
-    Manejador global para 404: rutas no encontradas.
-    Devuelve JSON en lugar de la página HTML por defecto de Flask.
-    """
-    response = {
-        'message': 'Endpoint no encontrado.',
-        'errors': {}
-    }
-    return jsonify(response), 404
-
+    return jsonify({'message': 'Endpoint no encontrado.', 'errors': {}}), 404
 
 @app.errorhandler(405)
 def handle_method_not_allowed(e):
-    """
-    Manejador global para 405: método no permitido.
-    """
-    response = {
-        'message': 'Método HTTP no permitido para este endpoint.',
-        'errors': {}
-    }
-    return jsonify(response), 405
+    return jsonify({'message': 'Método HTTP no permitido para este endpoint.', 'errors': {}}), 405
 
 
-# Iniciar la aplicación
+
+# -----------------------------
+# Arranque
+# -----------------------------
 if __name__ == '__main__':
-    # Solo se ejecuta al correr el script directamente, no en recarga automática
-    app.run(debug=True, port=5001)
+    # Ejecuta con un solo proceso/hilo.
+    app.run(
+        host="0.0.0.0",
+        port=5001,
+        debug=False,
+        use_reloader=False,
+        threaded=False
+    )

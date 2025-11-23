@@ -6,6 +6,7 @@ import string
 from datetime import datetime, timedelta
 import re
 import sys
+from werkzeug.exceptions import BadRequest
 
 # Third-party Libraries
 import requests
@@ -1098,10 +1099,10 @@ def usuario_modify_reservation(reservation_code):
     if not re.fullmatch(r'[A-Z0-9]{6}', code):
         return jsonify({'message': 'El código de reserva debe ser 6 caracteres alfanuméricos.'}), 400
 
-    # 2) Leer y validar body
-    data = request.get_json()
-    if not data:
-        return jsonify({'message': 'No se recibió cuerpo JSON.'}), 400
+    # 2) Leer y validar body (silent=True para evitar 415 cuando no viene JSON)
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'message': 'No se recibió cuerpo JSON'}), 400
 
     allowed = {'seat_number', 'email', 'phone_number', 'emergency_contact_name', 'emergency_contact_phone'}
     if set(data.keys()) != allowed:
@@ -1411,20 +1412,23 @@ def usuario_add_reservation():
         description: Error interno del servidor
     """
     try:
-        data = request.get_json()
-        if not data:
+        # 1) Intentar parsear JSON (sin lanzar excepción)
+        data = request.get_json(silent=True)
+
+        # Si no hay JSON válido o viene vacío -> 400 con mensaje esperado
+        if data is None or not isinstance(data, dict) or not data:
             return jsonify({'message': 'No se recibió cuerpo JSON'}), 400
 
-        # 1) Validar payload localmente
+        # 2) Validar payload localmente con Marshmallow
         validated = ReservationCreationSchema().load(data)
-        airplane_id  = validated['airplane_id']
-        route_id     = validated['airplane_route_id']
-        seat_number  = validated['seat_number']
+        airplane_id = validated['airplane_id']
+        route_id = validated['airplane_route_id']
+        seat_number = validated['seat_number']
 
-        gestion_vuelos   = os.getenv("GESTIONVUELOS_SERVICE")
+        gestion_vuelos = os.getenv("GESTIONVUELOS_SERVICE")
         gestion_reservas = os.getenv("GESTIONRESERVAS_SERVICE")
 
-        # 2) Validar ruta ↔ avión
+        # 3) Validar ruta ↔ avión en GestiónVuelos
         try:
             routes_resp = requests.get(f"{gestion_vuelos}/get_all_airplanes_routes", timeout=20)
         except requests.exceptions.ConnectionError:
@@ -1435,16 +1439,22 @@ def usuario_add_reservation():
         if routes_resp.status_code != 200:
             return jsonify({'message': 'Error al obtener rutas desde GestiónVuelos.'}), 500
 
-        route = next((r for r in routes_resp.json()
-                      if r.get('airplane_route_id') == route_id), None)
+        route = next(
+            (r for r in routes_resp.json()
+             if r.get('airplane_route_id') == route_id),
+            None
+        )
         if not route:
             return jsonify({'message': f'Ruta con ID {route_id} no encontrada.'}), 400
         if route.get('airplane_id') != airplane_id:
             return jsonify({'message': f'La ruta {route_id} no está asociada al avión {airplane_id}.'}), 400
 
-        # 3) Validar que el asiento esté Libre
+        # 4) Validar que el asiento esté Libre
         try:
-            seats_resp = requests.get(f"{gestion_vuelos}/get_airplane_seats/{airplane_id}/seats", timeout=20)
+            seats_resp = requests.get(
+                f"{gestion_vuelos}/get_airplane_seats/{airplane_id}/seats",
+                timeout=20
+            )
         except requests.exceptions.ConnectionError:
             return jsonify({'message': 'No se pudo conectar con GestiónVuelos para verificar asiento.'}), 503
         except requests.exceptions.Timeout:
@@ -1459,7 +1469,7 @@ def usuario_add_reservation():
         if seat['status'] != 'Libre':
             return jsonify({'message': f'El asiento {seat_number} no está libre.'}), 409
 
-        # 4) Llamar primero a GestiónReservas
+        # 5) Llamar primero a GestiónReservas para crear la reserva
         try:
             resp = requests.post(
                 f"{gestion_reservas}/add_reservation",
@@ -1471,12 +1481,15 @@ def usuario_add_reservation():
         except requests.exceptions.Timeout:
             return jsonify({'message': 'Timeout al contactar GestiónReservas'}), 504
 
-        # Si fallo en reservas, propagamos el error y **no** tocamos el asiento
+        # Si falló en reservas, propagamos el error y NO tocamos el asiento
         if resp.status_code != 201:
-            body = resp.json() if resp.headers.get('Content-Type','').startswith('application/json') else {'message': resp.text}
+            if resp.headers.get('Content-Type', '').startswith('application/json'):
+                body = resp.json()
+            else:
+                body = {'message': resp.text}
             return jsonify(body), resp.status_code
 
-        # 5) Solo ahora marcamos el asiento como Reservado
+        # 6) Solo ahora marcamos el asiento como Reservado en GestiónVuelos
         try:
             book_resp = requests.put(
                 f"{gestion_vuelos}/update_seat_status/{airplane_id}/seats/{seat_number}",
@@ -1484,7 +1497,7 @@ def usuario_add_reservation():
                 timeout=20
             )
         except requests.exceptions.RequestException:
-            # Idealmente aquí podrías hacer rollback de la reserva en GestiónReservas
+            # Idealmente aquí podrías hacer rollback en GestiónReservas
             return jsonify({
                 'message': 'Reserva en GestiónReservas OK, pero fallo al reservar asiento en GestiónVuelos.',
                 'reservation': resp.json()
@@ -1496,10 +1509,11 @@ def usuario_add_reservation():
                 'reservation': resp.json()
             }), 500
 
-        # 6) Todo OK: devolvemos el body de GestiónReservas
+        # 7) Todo OK: devolvemos el body de GestiónReservas
         return jsonify(resp.json()), 201
 
     except ValidationError as err:
+        # Para casos como email inválido, status inválido, etc.
         return jsonify({'message': 'Error de validación', 'errors': err.messages}), 400
     except Exception:
         logging.exception("❌ Error inesperado en Usuario al crear reserva")
@@ -1826,7 +1840,7 @@ def usuario_create_payment():
         description: Error interno del servidor
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
         if not data:
             return jsonify({'message': 'No se recibió cuerpo JSON'}), 400
 

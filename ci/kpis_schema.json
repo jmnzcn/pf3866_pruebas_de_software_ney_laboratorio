@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type":"object",
+  "required":["run_id","branch","commit","suite","metrics"],
+  "properties":{
+    "run_id":{"type":"string"},
+    "branch":{"type":"string"},
+    "commit":{"type":"string"},
+    "suite":{"type":"string","enum":["api","e2e"]},
+    "metrics":{
+      "type":"object",
+      "properties":{
+        "t1_design_minutes":{"type":"number"},
+        "t2_execution_minutes":{"type":"number"},
+        "t3_fix_minutes":{"type":"number"},
+        "defects_found":{"type":"integer"},
+        "precision_pos":{"type":"number"},
+        "recall":{"type":"number"},
+        "flakiness_rate":{"type":"number"},
+        "p95_ms":{"type":"number"},
+        "http_5xx":{"type":"integer"}
+      },
+      "additionalProperties":false
+    }
+  },
+  "additionalProperties":false
+}

@@ -1,0 +1,55 @@
+{
+  "endpoint": "POST /add_airplane",
+  "service": "gestionvuelos",
+  "version": "1.0",
+  "cases": [
+    {
+      "id": "GV-ADD-PLANE-001",
+      "name": "Crear avión válido (happy path)",
+      "method": "POST",
+      "path": "/add_airplane",
+      "tags": ["happy_path", "airplanes", "crear"],
+      "input": {
+        "airplane_id": "RANDOM_INT_800_899",
+        "model": "B737-AI-001",
+        "manufacturer": "Boeing",
+        "year": 2020,
+        "capacity": 15
+      },
+      "expected": {
+        "status_code": 201,
+        "json_contains": {
+          "message": "Avión y asientos agregados con éxito"
+        },
+        "schema_ref": "#/definitions/AirplaneSchema"
+      },
+      "business_rules": [
+        "year > 0",
+        "capacity > 0",
+        "airplane_id debe ser único"
+      ]
+    },
+    {
+      "id": "GV-ADD-PLANE-002",
+      "name": "Falta campo obligatorio (capacity)",
+      "method": "POST",
+      "path": "/add_airplane",
+      "tags": ["negativo", "validacion", "airplanes"],
+      "input": {
+        "airplane_id": "RANDOM_INT_900_999",
+        "model": "B737-AI-002",
+        "manufacturer": "Boeing",
+        "year": 2020
+      },
+      "expected": {
+        "status_code": 400,
+        "json_contains_text": [
+          "Faltan campos obligatorios"
+        ]
+      },
+      "business_rules": [
+        "Debe rechazar payloads con campos faltantes"
+      ]
+    }
+  ]
+}
