@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import re
 import sys
 from werkzeug.exceptions import BadRequest
+import uuid
 
 # Third-party Libraries
 import requests
@@ -38,6 +39,21 @@ logging.basicConfig(
 
 ## Configuración de Faker
 app = Flask(__name__)
+
+
+# === Identificador de instancia (por proceso) ===
+INSTANCE_ID = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
+
+@app.route("/", methods=["GET"])
+def root():
+    # Opcional: solo para que / no dé HTML 404
+    return jsonify({"message": "API viva en 5003 - Microservicio de Usuario"}), 200
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    app.logger.info(">>> /health de Usuario llamado")
+    return jsonify({"status": "ok", "service": "usuario", "instance_id": INSTANCE_ID}), 200
 
 
 ## Configuración de Swagger
@@ -2026,5 +2042,8 @@ def usuario_edit_payment(payment_id):
 
 # Iniciar la aplicación
 if __name__ == '__main__':
+
+    print("URL MAP Usuario:")
+    print(app.url_map)
 
     app.run(debug=True, port=5003)

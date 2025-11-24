@@ -45,6 +45,18 @@ app = Flask(__name__)
 # === Identificador de instancia (por proceso) ===
 INSTANCE_ID = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
 
+@app.route("/", methods=["GET"])
+def root():
+    # Opcional: solo para que / no dé HTML 404
+    return jsonify({"message": "API viva en 5001 - Microservicio de Gestion Vuelos"}), 200
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    app.logger.info(">>> /health de GestionVuelos llamado")
+    return jsonify({"status": "ok", "service": "vuelos", "instance_id": INSTANCE_ID}), 200
+
+
 @app.after_request
 def _add_headers(resp):
     resp.headers["X-Instance-Id"] = INSTANCE_ID
@@ -374,9 +386,7 @@ with STORE_LOCK:
 # -----------------------------
 # Endpoints de diagnóstico
 # -----------------------------
-@app.route('/health', methods=['GET'])
-def health():
-    return jsonify({"status": "ok", "instance_id": INSTANCE_ID}), 200
+
 
 @app.route('/__state', methods=['GET'])
 def __state():
@@ -1669,6 +1679,10 @@ def handle_method_not_allowed(e):
 # Arranque
 # -----------------------------
 if __name__ == '__main__':
+
+    print("URL MAP GestionVuelos:")
+    print(app.url_map)
+
     # Ejecuta con un solo proceso/hilo.
     app.run(
         host="0.0.0.0",

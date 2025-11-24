@@ -8,6 +8,7 @@ import re
 import random
 import string
 from werkzeug.exceptions import BadRequest
+import uuid
 
 # Third-party Libraries
 import requests
@@ -38,6 +39,21 @@ logging.basicConfig(
 
 ## Configuración de la aplicación Flask
 app = Flask(__name__)
+
+# === Identificador de instancia (por proceso) ===
+INSTANCE_ID = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
+
+
+@app.route("/", methods=["GET"])
+def root():
+    # Opcional: solo para que / no dé HTML 404
+    return jsonify({"message": "API viva en 5002 - Microservicio de Gestion Reservas"}), 200
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    app.logger.info(">>> /health de GestionReservas llamado")
+    return jsonify({"status": "ok", "service": "reservas", "instance_id": INSTANCE_ID}), 200
 
 
 ## Configuración de Swagger
@@ -1589,6 +1605,9 @@ def edit_payment(payment_id):
 
 # Iniciar la aplicación
 if __name__ == '__main__':
+
+  print("URL MAP GestionReservas:")
+  print(app.url_map)
 
   # Generar las reservas una sola vez al arrancar el servidor
   reservations.extend(generate_fake_reservations(3))
