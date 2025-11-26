@@ -203,7 +203,7 @@ def _run_pytest(pytest_args: list[str]) -> dict[str, Any]:
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
-            timeout=180,  # ajusta si necesitas más tiempo
+            timeout=180000,  # ajusta si necesitas más tiempo
         )
     except Exception as e:
         return {
