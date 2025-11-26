@@ -1,4 +1,4 @@
-# mcp/server.py
+# pf3866_mcp/server.py
 """
 Servidor MCP para el laboratorio PF3866.
 
@@ -11,11 +11,12 @@ Estas herramientas se usarán desde ChatGPT/QA-Copilot como apoyo
 para diseñar y ejecutar pruebas sobre los endpoints.
 """
 
-import os
 from typing import Any, Literal
+import subprocess
+from pathlib import Path
 
 import requests
-from fastmcp import FastMCP # FastMCP del SDK oficial MCP :contentReference[oaicite:1]{index=1}
+from fastmcp import FastMCP
 
 # Crear el servidor MCP
 mcp = FastMCP("pf3866-microservicios")
@@ -27,6 +28,11 @@ BASE_URLS: dict[str, str] = {
     "usuario": "http://localhost:5003",
 }
 
+SERVER_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SERVER_DIR.parent           # carpeta raíz del repo (LABORATORIO)
+DOCS_DIR = REPO_ROOT / "docs"
+TESTS_API_DIR = REPO_ROOT / "tests" / "api"
+
 
 def _call_service(
     service: Literal["vuelos", "reservas", "usuario"],
@@ -36,13 +42,8 @@ def _call_service(
     timeout: float = 5.0,
 ) -> dict[str, Any]:
     """
-    Función interna para llamar a un endpoint de cualquiera de los microservicios.
-
-    Devuelve un dict estructurado para que el modelo pueda razonar sobre:
-    - status: código HTTP
-    - ok: True/False
-    - url: URL llamada
-    - body: JSON o texto devuelto por el servicio
+    Llama a un endpoint de cualquiera de los microservicios
+    y devuelve un resultado estructurado.
     """
     base_url = BASE_URLS.get(service)
     if base_url is None:
@@ -72,18 +73,13 @@ def _call_service(
     }
 
 
+# ---------- TOOLS: LLAMADAS A MICROSERVICIOS ----------
+
 @mcp.tool()
 def get_health(
     service: Literal["vuelos", "reservas", "usuario"],
 ) -> dict[str, Any]:
-    """
-    Obtiene el estado de salud (/health) de uno de los microservicios.
-
-    Útil para:
-    - Verificar si el servicio está arriba antes de correr pruebas.
-    - Usar desde ChatGPT para decidir qué pruebas ejecutar.
-    """
-    # Ajusta la ruta si tu endpoint de salud se llama distinto
+    """Obtiene el estado de salud (/health) de uno de los microservicios."""
     return _call_service(service, "GET", "/health")
 
 
@@ -94,21 +90,14 @@ def add_airplane(
     year: int,
     capacity: int,
 ) -> dict[str, Any]:
-    """
-    Crea un avión de prueba llamando a /add_airplane en GestionVuelos.
-
-    Desde ChatGPT se puede usar para:
-    - Generar datos previos a una prueba (precondiciones).
-    - Verificar validaciones de año/capacidad/modelo.
-    """
+    """Crea un avión de prueba llamando a /add_airplane en GestionVuelos."""
     body = {
-        "airplane_id": "",  # si en tu API se genera automáticamente, puedes omitirlo
+        "airplane_id": "",
         "model": model,
         "manufacturer": manufacturer,
         "year": year,
         "capacity": capacity,
     }
-    # Ajusta la ruta al endpoint real si es necesario
     return _call_service("vuelos", "POST", "/add_airplane", json_body=body)
 
 
@@ -122,13 +111,7 @@ def add_reservation(
     flight_id: str,
     seat_number: str,
 ) -> dict[str, Any]:
-    """
-    Crea una reserva de prueba llamando al microservicio GestionReservas.
-
-    Permite que el modelo:
-    - Genere casos de prueba completos de flujo de reserva.
-    - Testee validaciones de campos obligatorios/formato.
-    """
+    """Crea una reserva de prueba llamando al microservicio GestionReservas."""
     body = {
         "reservation_code": reservation_code,
         "passport_number": passport_number,
@@ -137,13 +120,7 @@ def add_reservation(
         "phone_number": phone_number,
         "flight_id": flight_id,
         "seat_number": seat_number,
-        # Puedes añadir aquí más campos según tu API:
-        # "emergency_contact_name": "...",
-        # "emergency_contact_phone": "...",
-        # "status": "PENDING",
-        # "issued_at": "2025-01-01T00:00:00Z",
     }
-    # Ajusta la ruta al endpoint real de creación de reservas
     return _call_service("reservas", "POST", "/add_reservation", json_body=body)
 
 
@@ -154,14 +131,7 @@ def call_endpoint(
     path: str,
     payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """
-    Herramienta genérica para probar cualquier endpoint de los microservicios.
-
-    Ejemplos de uso desde el modelo (en lenguaje natural):
-    - "Llama al endpoint POST /add_airplanes_routes en el servicio 'vuelos'
-       con este body JSON..."
-    - "Haz un GET /get_airplanes en 'vuelos' para ver qué devuelve"
-    """
+    """Herramienta genérica para probar cualquier endpoint de los microservicios."""
     return _call_service(service, method, path, json_body=payload)
 
 
@@ -170,19 +140,7 @@ def edit_payment(
     payment_id: str,
     body: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """
-    Edita un pago en el microservicio Usuario llamando al endpoint /edit_payment/<payment_id>.
-
-    Uso típico desde ChatGPT / QA-Copilot:
-    - Probar validaciones cuando el cuerpo JSON está vacío o ausente
-    - Probar cambios válidos de un pago existente
-    - Reproducir los casos cubiertos en tests/api/test_usuario_edit_payment_rag.py
-
-    Parámetros:
-    - payment_id: identificador del pago (por ejemplo 'PAY123456')
-    - body: JSON con los cambios del pago. Si es None, se simula el caso
-      de "no se recibió cuerpo JSON".
-    """
+    """Edita un pago en el microservicio Usuario llamando a /edit_payment/<payment_id>."""
     path = f"/edit_payment/{payment_id}"
     return _call_service(
         service="usuario",
@@ -194,15 +152,8 @@ def edit_payment(
 
 @mcp.tool()
 def edit_payment_sin_body(payment_id: str) -> dict[str, Any]:
-    """
-    Escenario de prueba: editar un pago SIN cuerpo JSON.
-
-    Equivale a llamar PUT /edit_payment/<payment_id> sin JSON.
-    Se usa para verificar que el servicio devuelve 400 y el mensaje
-    tipo "No se recibió cuerpo JSON" u otro mensaje de error esperado.
-    """
+    """Escenario de prueba: editar un pago SIN cuerpo JSON."""
     path = f"/edit_payment/{payment_id}"
-    # Notar que pasamos json_body=None para simular ausencia de JSON
     return _call_service(
         service="usuario",
         method="PUT",
@@ -218,13 +169,7 @@ def edit_payment_body_minimo(
     estado: str,
     metodo: str | None = None,
 ) -> dict[str, Any]:
-    """
-    Escenario de prueba: editar un pago con un body JSON mínimo válido.
-
-    Ajusta los nombres de los campos según tu API real.
-    Ejemplo de uso: probar el caso "happy path" y luego construir
-    variantes con valores inválidos (monto negativo, estado raro, etc.).
-    """
+    """Escenario de prueba: editar un pago con un body JSON mínimo válido."""
     body: dict[str, Any] = {
         "amount": monto,
         "status": estado,
@@ -241,5 +186,183 @@ def edit_payment_body_minimo(
     )
 
 
+# ---------- HELPER: EJECUTAR PYTEST ----------
+
+def _run_pytest(pytest_args: list[str]) -> dict[str, Any]:
+    """
+    Ejecuta pytest con los argumentos dados y devuelve un resumen estructurado.
+
+    - pytest_args: lista de argumentos, por ejemplo:
+      ["tests/api"] o ["tests/api/test_usuario_add_reservation_rag.py"].
+    """
+    cmd = ["pytest", "-q"] + pytest_args
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=180,  # ajusta si necesitas más tiempo
+        )
+    except Exception as e:
+        return {
+            "ok": False,
+            "command": " ".join(cmd),
+            "error": f"Error al ejecutar pytest: {e}",
+        }
+
+    return {
+        "ok": result.returncode == 0,
+        "exit_code": result.returncode,
+        "command": " ".join(cmd),
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+    }
 
 
+# ---------- TOOLS: EJECUTAR TESTS ----------
+
+@mcp.tool()
+def run_all_api_tests() -> dict[str, Any]:
+    """
+    Ejecuta todos los tests de la carpeta tests/api con pytest.
+
+    Útil para lanzar la batería completa de pruebas de API.
+    """
+    return _run_pytest(["tests/api"])
+
+
+@mcp.tool()
+def run_api_test_file(test_file: str) -> dict[str, Any]:
+    """
+    Ejecuta un archivo de test dentro de tests/api con pytest.
+
+    Ejemplo de uso:
+    - 'test_usuario_add_reservation_rag.py'
+    """
+    if "/" in test_file or "\\" in test_file:
+        return {
+            "ok": False,
+            "error": "Solo se permite el nombre del archivo, sin rutas.",
+        }
+
+    path = f"tests/api/{test_file}"
+    return _run_pytest([path])
+
+
+@mcp.tool()
+def run_api_tests_by_keyword(keyword: str) -> dict[str, Any]:
+    """
+    Ejecuta tests de tests/api filtrados con pytest -k <keyword>.
+
+    Ejemplos:
+    - keyword='edit_payment'
+    - keyword='rag'
+    """
+    return _run_pytest(["tests/api", "-k", keyword])
+
+
+@mcp.tool()
+def run_single_api_test(test_file: str, test_name: str) -> dict[str, Any]:
+    """
+    Ejecuta una sola prueba dentro de tests/api usando su nombre de función.
+
+    Ejemplo:
+    - test_file='test_usuario_add_reservation_rag.py'
+    - test_name='test_add_reservation_happy_path'
+    """
+    # Solo nombre de archivo, sin rutas
+    if "/" in test_file or "\\" in test_file:
+        return {
+            "ok": False,
+            "error": "Solo se permite el nombre del archivo, sin rutas.",
+        }
+
+    # Node id de pytest: tests/api/archivo.py::nombre_de_test
+    node_id = f"tests/api/{test_file}::{test_name}"
+    return _run_pytest([node_id])
+
+
+# ---------- TOOLS: LEER TESTS Y DOCS ----------
+
+@mcp.tool()
+def read_api_test_file(test_file: str) -> dict[str, Any]:
+    """
+    Lee un archivo de tests en tests/api y devuelve su contenido.
+
+    Ejemplo:
+    - 'test_usuario_add_reservation_rag.py'
+    """
+    if "/" in test_file or "\\" in test_file:
+        return {
+            "ok": False,
+            "error": "Solo se permite el nombre del archivo, sin rutas.",
+        }
+
+    path = TESTS_API_DIR / test_file
+
+    if not path.is_file():
+        return {
+            "ok": False,
+            "path": str(path),
+            "error": "No se encontró el archivo de test en la ruta esperada.",
+        }
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return {
+            "ok": False,
+            "path": str(path),
+            "error": f"Error al leer el archivo: {e}",
+        }
+
+    return {
+        "ok": True,
+        "path": str(path),
+        "content": content,
+    }
+
+
+@mcp.tool()
+def read_experimento_doc(nombre_md: str) -> dict[str, Any]:
+    """
+    Lee un archivo de docs/ y devuelve su contenido.
+
+    Ejemplos:
+    - 'EXPERIMENTO_RAG_01_usuario_add_reservation.md'
+    - 'ENDPOINTS_Usuario.md'
+    """
+    if "/" in nombre_md or "\\" in nombre_md:
+        return {
+            "ok": False,
+            "error": "Solo se permite el nombre del archivo, sin rutas.",
+        }
+
+    path = DOCS_DIR / nombre_md
+
+    if not path.is_file():
+        return {
+            "ok": False,
+            "path": str(path),
+            "error": "No se encontró el archivo .md en la ruta esperada.",
+        }
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return {
+            "ok": False,
+            "path": str(path),
+            "error": f"Error al leer el archivo: {e}",
+        }
+
+    return {
+        "ok": True,
+        "path": str(path),
+        "content": content,
+    }
+
+
+if __name__ == "__main__":
+    mcp.run()

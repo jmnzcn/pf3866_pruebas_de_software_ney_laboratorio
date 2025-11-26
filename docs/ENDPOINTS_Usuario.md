@@ -10,6 +10,27 @@ Por eso muchos endpoints delegan la lógica a otros microservicios y añaden val
 
 ---
 
+## 0. Healthcheck
+
+### 0.1. GET `/health`
+
+Endpoint simple de salud del microservicio Usuario.
+
+Flujo:
+- No recibe parámetros.
+- Registra en logs que fue llamado.
+- Responde siempre `200` con un JSON indicando el estado del servicio.
+
+Respuesta:
+- `200`  
+  ```json
+  {
+    "status": "ok",
+    "service": "usuario"
+  }
+
+---
+
 ## 1. Rutas y asientos (`Flights routes and seats`)
 
 ### 1.1. GET `/get_seats_by_airplane_id/{airplane_id}/seats`
