@@ -14,12 +14,13 @@ para diseñar y ejecutar pruebas sobre los endpoints.
 from typing import Any, Literal
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import requests
 from fastmcp import FastMCP
 
 # Crear el servidor MCP
-mcp = FastMCP("pf3866-microservicios")
+mcp = FastMCP("pf3866-microservicios", stateless_http=True)
 
 # Mapear nombres lógicos de servicio a sus URLs locales
 BASE_URLS: dict[str, str] = {
@@ -234,12 +235,6 @@ def run_all_api_tests() -> dict[str, Any]:
 
 @mcp.tool()
 def run_api_test_file(test_file: str) -> dict[str, Any]:
-    """
-    Ejecuta un archivo de test dentro de tests/api con pytest.
-
-    Ejemplo de uso:
-    - 'test_usuario_add_reservation_rag.py'
-    """
     if "/" in test_file or "\\" in test_file:
         return {
             "ok": False,
@@ -365,4 +360,9 @@ def read_experimento_doc(nombre_md: str) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(
+        transport="streamable-http",
+        host="0.0.0.0",  # para exponerlo fuera de la máquina
+        port=8000,
+        path="/mcp",     # ruta HTTP del endpoint MCP
+    )
