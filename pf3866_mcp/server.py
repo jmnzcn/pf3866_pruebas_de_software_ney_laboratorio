@@ -394,7 +394,7 @@ def _read_repo_file(relative_path: str) -> dict[str, Any]:
 
     Ejemplos válidos:
     - 'GestionVuelos/app.py'
-    - 'GestionReservas/models.py'
+    - 'GestionReservas/app.py'
 
     No permite rutas absolutas ni subir directorios (..).
     """
