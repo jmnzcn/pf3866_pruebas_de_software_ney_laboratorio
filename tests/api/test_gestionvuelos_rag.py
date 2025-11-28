@@ -181,6 +181,7 @@ def test_add_airplane_rag_cases(
             "year": 2020,
             "capacity": 15,
         }
+        print(f"[{case_id}] Escenario '{scenario}' -> payload: {payload}")
         r = _post("/add_airplane", json=payload)
 
     elif scenario == "id_dup":
@@ -192,8 +193,11 @@ def test_add_airplane_rag_cases(
             "year": 2018,
             "capacity": 12,
         }
+        print(f"[{case_id}] Creando avión base para duplicado: {base_payload}")
         _post("/add_airplane", json=base_payload)
+
         payload = base_payload
+        print(f"[{case_id}] Escenario '{scenario}' -> payload duplicado: {payload}")
         r = _post("/add_airplane", json=payload)
 
     elif scenario == "missing_fields":
@@ -201,6 +205,7 @@ def test_add_airplane_rag_cases(
             "airplane_id": random.randint(21_000, 21_999),
             "model": "X-SIN-CAMPOS",
         }
+        print(f"[{case_id}] Escenario '{scenario}' -> payload: {payload}")
         r = _post("/add_airplane", json=payload)
 
     elif scenario == "extra_fields":
@@ -212,6 +217,7 @@ def test_add_airplane_rag_cases(
             "capacity": 12,
             "color": "rojo",
         }
+        print(f"[{case_id}] Escenario '{scenario}' -> payload: {payload}")
         r = _post("/add_airplane", json=payload)
 
     elif scenario == "year_zero":
@@ -222,6 +228,7 @@ def test_add_airplane_rag_cases(
             "year": 0,
             "capacity": 10,
         }
+        print(f"[{case_id}] Escenario '{scenario}' -> payload: {payload}")
         r = _post("/add_airplane", json=payload)
 
     elif scenario == "capacity_zero":
@@ -232,18 +239,26 @@ def test_add_airplane_rag_cases(
             "year": 2017,
             "capacity": 0,
         }
+        print(f"[{case_id}] Escenario '{scenario}' -> payload: {payload}")
         r = _post("/add_airplane", json=payload)
 
     elif scenario == "empty_body":
+        print(f"[{case_id}] Escenario '{scenario}' -> payload vacío {{}}")
         r = _post("/add_airplane", json={})
 
     else:
         pytest.fail(f"Escenario desconocido en /add_airplane: {scenario}")
 
+    # Intentamos parsear cuerpo JSON
     try:
         body = r.json()
     except Exception:
         body = {}
+
+    # Log de la respuesta
+    print(
+        f"[{case_id}] Respuesta /add_airplane: status={r.status_code}, body={body}"
+    )
 
     # Manejo especial para el caso feliz: aceptamos 201 o 400 duplicado
     if scenario == "happy":

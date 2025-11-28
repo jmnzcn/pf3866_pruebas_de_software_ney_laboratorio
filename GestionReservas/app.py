@@ -925,7 +925,7 @@ def edit_reservation(reservation_code):
         return jsonify({'message': 'Reserva no encontrada'}), 404
 
     # 3) Obtener y validar el body
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({'message': 'No se recibió cuerpo JSON.'}), 400
 
