@@ -33,10 +33,14 @@ BASE_URLS: dict[str, str] = {
 }
 
 SERVER_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SERVER_DIR.parent           # carpeta raíz del repo (LABORATORIO)
+REPO_ROOT = SERVER_DIR.parent  # carpeta raíz del repo (LABORATORIO)
 DOCS_DIR = REPO_ROOT / "docs"
 TESTS_API_DIR = REPO_ROOT / "tests" / "api"
 
+
+# ---------------------------------------------------------------------------
+# HELPER HTTP
+# ---------------------------------------------------------------------------
 
 def _call_service(
     service: Literal["vuelos", "reservas", "usuario"],
@@ -81,7 +85,9 @@ def _call_service(
     }
 
 
-# ---------- TOOLS: LLAMADAS A MICROSERVICIOS ----------
+# ---------------------------------------------------------------------------
+# TOOLS GENÉRICOS (POR SERVICIO)
+# ---------------------------------------------------------------------------
 
 @mcp.tool()
 def get_health(
@@ -90,6 +96,21 @@ def get_health(
     """Obtiene el estado de salud (/health) del microservicio especificado."""
     return _call_service(service, "GET", "/health")
 
+
+@mcp.tool()
+def call_endpoint(
+    service: Literal["vuelos", "reservas", "usuario"],
+    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"],
+    path: str,
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Herramienta genérica para probar cualquier endpoint de los microservicios."""
+    return _call_service(service, method, path, json_body=payload)
+
+
+# ---------------------------------------------------------------------------
+# TOOLS ESPECÍFICOS: GESTIONVUELOS
+# ---------------------------------------------------------------------------
 
 @mcp.tool()
 def add_airplane(
@@ -108,6 +129,165 @@ def add_airplane(
     }
     return _call_service("vuelos", "POST", "/add_airplane", json_body=body)
 
+
+@mcp.tool()
+def get_airplanes_vuelos() -> dict[str, Any]:
+    """GET /get_airplanes en GestiónVuelos."""
+    return _call_service("vuelos", "GET", "/get_airplanes")
+
+
+@mcp.tool()
+def get_airplane_by_id_vuelos(airplane_id: int) -> dict[str, Any]:
+    """GET /get_airplane_by_id/<airplane_id> en GestiónVuelos."""
+    path = f"/get_airplane_by_id/{airplane_id}"
+    return _call_service("vuelos", "GET", path)
+
+
+@mcp.tool()
+def update_airplane_vuelos(
+    airplane_id: int,
+    model: str,
+    manufacturer: str,
+    year: int,
+    capacity: int,
+) -> dict[str, Any]:
+    """PUT /update_airplane/<airplane_id> en GestiónVuelos."""
+    path = f"/update_airplane/{airplane_id}"
+    body = {
+        "model": model,
+        "manufacturer": manufacturer,
+        "year": year,
+        "capacity": capacity,
+    }
+    return _call_service("vuelos", "PUT", path, json_body=body)
+
+
+@mcp.tool()
+def delete_airplane_by_id_vuelos(airplane_id: int) -> dict[str, Any]:
+    """DELETE /delete_airplane_by_id/<airplane_id> en GestiónVuelos."""
+    path = f"/delete_airplane_by_id/{airplane_id}"
+    return _call_service("vuelos", "DELETE", path)
+
+
+@mcp.tool()
+def get_airplane_seats_vuelos(airplane_id: int) -> dict[str, Any]:
+    """GET /get_airplane_seats/<airplane_id>/seats en GestiónVuelos."""
+    path = f"/get_airplane_seats/{airplane_id}/seats"
+    return _call_service("vuelos", "GET", path)
+
+
+@mcp.tool()
+def get_seats_grouped_by_airplane_vuelos() -> dict[str, Any]:
+    """GET /seats/grouped-by-airplane en GestiónVuelos."""
+    return _call_service("vuelos", "GET", "/seats/grouped-by-airplane")
+
+
+@mcp.tool()
+def update_seat_status_vuelos(
+    airplane_id: int,
+    seat_number: str,
+    status: Literal["Libre", "Reservado", "Pagado"],
+) -> dict[str, Any]:
+    """PUT /update_seat_status/<airplane_id>/seats/<seat_number> en GestiónVuelos."""
+    path = f"/update_seat_status/{airplane_id}/seats/{seat_number}"
+    body = {"status": status}
+    return _call_service("vuelos", "PUT", path, json_body=body)
+
+
+@mcp.tool()
+def get_random_free_seat_vuelos(airplane_id: int) -> dict[str, Any]:
+    """GET /get_random_free_seat/<airplane_id> en GestiónVuelos."""
+    path = f"/get_random_free_seat/{airplane_id}"
+    return _call_service("vuelos", "GET", path)
+
+
+@mcp.tool()
+def free_seat_vuelos(airplane_id: int, seat_number: str) -> dict[str, Any]:
+    """PUT /free_seat/<airplane_id>/seats/<seat_number> en GestiónVuelos."""
+    path = f"/free_seat/{airplane_id}/seats/{seat_number}"
+    return _call_service("vuelos", "PUT", path)
+
+
+@mcp.tool()
+def add_airplane_route_vuelos(
+    airplane_route_id: int,
+    airplane_id: int,
+    flight_number: str,
+    departure: str,
+    departure_time: str,
+    arrival: str,
+    arrival_time: str,
+    price: int,
+    Moneda: str,
+) -> dict[str, Any]:
+    """POST /add_airplane_route en GestiónVuelos."""
+    body = {
+        "airplane_route_id": airplane_route_id,
+        "airplane_id": airplane_id,
+        "flight_number": flight_number,
+        "departure": departure,
+        "departure_time": departure_time,
+        "arrival": arrival,
+        "arrival_time": arrival_time,
+        "price": price,
+        "Moneda": Moneda,
+    }
+    return _call_service("vuelos", "POST", "/add_airplane_route", json_body=body)
+
+
+@mcp.tool()
+def get_airplane_route_by_id_vuelos(airplane_route_id: int) -> dict[str, Any]:
+    """GET /get_airplanes_route_by_id/<airplane_route_id> en GestiónVuelos."""
+    path = f"/get_airplanes_route_by_id/{airplane_route_id}"
+    return _call_service("vuelos", "GET", path)
+
+
+@mcp.tool()
+def update_airplane_route_by_id_vuelos(
+    airplane_route_id: int,
+    airplane_id: int,
+    flight_number: str,
+    departure: str,
+    departure_time: str,
+    arrival: str,
+    arrival_time: str,
+    price: int,
+    Moneda: str,
+) -> dict[str, Any]:
+    """PUT /update_airplane_route_by_id/<airplane_route_id> en GestiónVuelos."""
+    path = f"/update_airplane_route_by_id/{airplane_route_id}"
+    body = {
+        "airplane_route_id": airplane_route_id,
+        "airplane_id": airplane_id,
+        "flight_number": flight_number,
+        "departure": departure,
+        "departure_time": departure_time,
+        "arrival": arrival,
+        "arrival_time": arrival_time,
+        "price": price,
+        "Moneda": Moneda,
+    }
+    return _call_service("vuelos", "PUT", path, json_body=body)
+
+
+@mcp.tool()
+def delete_airplane_route_by_id_vuelos(airplane_route_id: int) -> dict[str, Any]:
+    """DELETE /delete_airplane_route_by_id/<airplane_route_id> en GestiónVuelos."""
+    path = f"/delete_airplane_route_by_id/{airplane_route_id}"
+    return _call_service("vuelos", "DELETE", path)
+
+
+@mcp.tool()
+def get_all_airplanes_routes_from_vuelos() -> dict[str, Any]:
+    """
+    Envuelve GET /get_all_airplanes_routes en GestiónVuelos.
+    """
+    return _call_service("vuelos", "GET", "/get_all_airplanes_routes")
+
+
+# ---------------------------------------------------------------------------
+# TOOLS ESPECÍFICOS: GESTIONRESERVAS
+# ---------------------------------------------------------------------------
 
 @mcp.tool()
 def add_reservation_gestionreservas(
@@ -141,14 +321,232 @@ def add_reservation_gestionreservas(
 
 
 @mcp.tool()
-def call_endpoint(
-    service: Literal["vuelos", "reservas", "usuario"],
-    method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"],
-    path: str,
-    payload: dict[str, Any] | None = None,
+def get_reservation_by_code_reservas(reservation_code: str) -> dict[str, Any]:
+    """GET /get_reservation_by_code/<reservation_code> en GestiónReservas."""
+    path = f"/get_reservation_by_code/{reservation_code}"
+    return _call_service("reservas", "GET", path)
+
+
+@mcp.tool()
+def get_reservation_by_id_reservas(reservation_id: int) -> dict[str, Any]:
+    """GET /get_reservation_by_id/<reservation_id> en GestiónReservas."""
+    path = f"/get_reservation_by_id/{reservation_id}"
+    return _call_service("reservas", "GET", path)
+
+
+@mcp.tool()
+def delete_reservation_by_id_reservas(reservation_id: int) -> dict[str, Any]:
+    """DELETE /delete_reservation_by_id/<reservation_id> en GestiónReservas."""
+    path = f"/delete_reservation_by_id/{reservation_id}"
+    return _call_service("reservas", "DELETE", path)
+
+
+@mcp.tool()
+def get_fake_reservations_reservas() -> dict[str, Any]:
+    """GET /get_fake_reservations en GestiónReservas."""
+    return _call_service("reservas", "GET", "/get_fake_reservations")
+
+
+@mcp.tool()
+def get_all_reservations_from_reservas() -> dict[str, Any]:
+    """
+    Envuelve GET /get_fake_reservations en GestiónReservas.
+    Útil para inspeccionar las reservas de prueba generadas al arrancar.
+    """
+    return _call_service("reservas", "GET", "/get_fake_reservations")
+
+
+@mcp.tool()
+def create_payment_reservas(
+    reservation_id: int,
+    payment_method: str,
+    currency: str = "Dolares",
 ) -> dict[str, Any]:
-    """Herramienta genérica para probar cualquier endpoint de los microservicios."""
-    return _call_service(service, method, path, json_body=payload)
+    """POST /create_payment en GestiónReservas."""
+    body = {
+        "reservation_id": reservation_id,
+        "payment_method": payment_method,
+        "currency": currency,
+    }
+    return _call_service("reservas", "POST", "/create_payment", json_body=body)
+
+
+@mcp.tool()
+def get_payment_by_id_reservas(payment_id: str) -> dict[str, Any]:
+    """GET /get_payment_by_id/<payment_id> en GestiónReservas."""
+    path = f"/get_payment_by_id/{payment_id}"
+    return _call_service("reservas", "GET", path)
+
+
+@mcp.tool()
+def cancel_payment_and_reservation_reservas(payment_id: str) -> dict[str, Any]:
+    """DELETE /cancel_payment_and_reservation/<payment_id> en GestiónReservas."""
+    path = f"/cancel_payment_and_reservation/{payment_id}"
+    return _call_service("reservas", "DELETE", path)
+
+
+@mcp.tool()
+def edit_payment_reservas(
+    payment_id: str,
+    body: dict[str, Any],
+) -> dict[str, Any]:
+    """PUT /edit_payment/<payment_id> en GestiónReservas."""
+    path = f"/edit_payment/{payment_id}"
+    return _call_service("reservas", "PUT", path, json_body=body)
+
+
+@mcp.tool()
+def get_all_fake_payments_from_reservas() -> dict[str, Any]:
+    """
+    Envuelve GET /get_all_fake_payments en GestiónReservas.
+    """
+    return _call_service("reservas", "GET", "/get_all_fake_payments")
+
+
+# ---------------------------------------------------------------------------
+# TOOLS ESPECÍFICOS: USUARIO
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def get_seats_by_airplane_id_usuario(airplane_id: int) -> dict[str, Any]:
+    """GET /get_seats_by_airplane_id/<airplane_id>/seats en Usuario."""
+    path = f"/get_seats_by_airplane_id/{airplane_id}/seats"
+    return _call_service("usuario", "GET", path)
+
+
+@mcp.tool()
+def get_all_airplanes_with_seats_usuario() -> dict[str, Any]:
+    """GET /get_all_airplanes_with_seats en Usuario."""
+    return _call_service("usuario", "GET", "/get_all_airplanes_with_seats")
+
+
+@mcp.tool()
+def get_all_airplanes_routes_usuario() -> dict[str, Any]:
+    """GET /get_all_airplanes_routes en Usuario."""
+    return _call_service("usuario", "GET", "/get_all_airplanes_routes")
+
+
+@mcp.tool()
+def get_airplane_route_by_id_usuario(airplane_route_id: int) -> dict[str, Any]:
+    """GET /get_airplane_route_by_id/<airplane_route_id> en Usuario."""
+    path = f"/get_airplane_route_by_id/{airplane_route_id}"
+    return _call_service("usuario", "GET", path)
+
+
+@mcp.tool()
+def usuario_get_reservation_by_code(reservation_code: str) -> dict[str, Any]:
+    """GET /get_reservation_by_code/<reservation_code> en Usuario."""
+    path = f"/get_reservation_by_code/{reservation_code}"
+    return _call_service("usuario", "GET", path)
+
+
+@mcp.tool()
+def usuario_get_reservation_by_id(reservation_id: int) -> dict[str, Any]:
+    """GET /get_reservation_by_id/<reservation_id> en Usuario."""
+    path = f"/get_reservation_by_id/{reservation_id}"
+    return _call_service("usuario", "GET", path)
+
+
+@mcp.tool()
+def usuario_update_reservation(
+    reservation_code: str,
+    seat_number: str,
+    email: str,
+    phone_number: str,
+    emergency_contact_name: str,
+    emergency_contact_phone: str,
+) -> dict[str, Any]:
+    """
+    PUT /update_reservation/<reservation_code> en Usuario.
+    Actualiza exactamente: seat_number, email, phone_number,
+    emergency_contact_name, emergency_contact_phone.
+    """
+    path = f"/update_reservation/{reservation_code}"
+    body = {
+        "seat_number": seat_number,
+        "email": email,
+        "phone_number": phone_number,
+        "emergency_contact_name": emergency_contact_name,
+        "emergency_contact_phone": emergency_contact_phone,
+    }
+    return _call_service("usuario", "PUT", path, json_body=body)
+
+
+@mcp.tool()
+def usuario_delete_reservation_by_id(reservation_id: int) -> dict[str, Any]:
+    """DELETE /usuario/delete_reservation_by_id/<reservation_id> en Usuario."""
+    path = f"/usuario/delete_reservation_by_id/{reservation_id}"
+    return _call_service("usuario", "DELETE", path)
+
+
+@mcp.tool()
+def usuario_get_all_reservations() -> dict[str, Any]:
+    """GET /get_all_reservations en Usuario."""
+    return _call_service("usuario", "GET", "/get_all_reservations")
+
+
+@mcp.tool()
+def usuario_add_reservation(
+    airplane_id: int,
+    airplane_route_id: int,
+    passport_number: str,
+    full_name: str,
+    email: str,
+    phone_number: str,
+    emergency_contact_name: str,
+    emergency_contact_phone: str,
+    seat_number: str,
+    status: str = "Reservado",
+) -> dict[str, Any]:
+    """POST /usuario/add_reservation en Usuario."""
+    body = {
+        "airplane_id": airplane_id,
+        "airplane_route_id": airplane_route_id,
+        "passport_number": passport_number,
+        "full_name": full_name,
+        "email": email,
+        "phone_number": phone_number,
+        "emergency_contact_name": emergency_contact_name,
+        "emergency_contact_phone": emergency_contact_phone,
+        "seat_number": seat_number,
+        "status": status,
+    }
+    return _call_service("usuario", "POST", "/usuario/add_reservation", json_body=body)
+
+
+@mcp.tool()
+def usuario_cancel_payment_and_reservation(payment_id: str) -> dict[str, Any]:
+    """DELETE /cancel_payment_and_reservation/<payment_id> en Usuario."""
+    path = f"/cancel_payment_and_reservation/{payment_id}"
+    return _call_service("usuario", "DELETE", path)
+
+
+@mcp.tool()
+def usuario_get_all_payments() -> dict[str, Any]:
+    """GET /get_all_payments en Usuario."""
+    return _call_service("usuario", "GET", "/get_all_payments")
+
+
+@mcp.tool()
+def usuario_get_payment_by_id(payment_id: str) -> dict[str, Any]:
+    """GET /get_payment_by_id/<payment_id> en Usuario."""
+    path = f"/get_payment_by_id/{payment_id}"
+    return _call_service("usuario", "GET", path)
+
+
+@mcp.tool()
+def usuario_create_payment(
+    reservation_id: int,
+    payment_method: str,
+    currency: str = "Dolares",
+) -> dict[str, Any]:
+    """POST /usuario/create_payment en Usuario."""
+    body = {
+        "reservation_id": reservation_id,
+        "payment_method": payment_method,
+        "currency": currency,
+    }
+    return _call_service("usuario", "POST", "/usuario/create_payment", json_body=body)
 
 
 @mcp.tool()
@@ -156,7 +554,10 @@ def edit_payment(
     payment_id: str,
     body: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Edita un pago en el microservicio Usuario llamando a /usuario/edit_payment/<payment_id>."""
+    """
+    Edita un pago en el microservicio Usuario llamando a
+    /usuario/edit_payment/<payment_id>.
+    """
     path = f"/usuario/edit_payment/{payment_id}"
     return _call_service(
         service="usuario",
@@ -178,7 +579,6 @@ def edit_payment_sin_body(payment_id: str) -> dict[str, Any]:
     )
 
 
-
 @mcp.tool()
 def smoke_test_usuario() -> dict[str, Any]:
     """
@@ -188,41 +588,15 @@ def smoke_test_usuario() -> dict[str, Any]:
     - GET /get_all_payments
     """
     results = {}
-
     results["routes"] = _call_service("usuario", "GET", "/get_all_airplanes_routes")
     results["reservations"] = _call_service("usuario", "GET", "/get_all_reservations")
     results["payments"] = _call_service("usuario", "GET", "/get_all_payments")
-
     return results
 
 
-@mcp.tool()
-def get_all_reservations_from_reservas() -> dict[str, Any]:
-    """
-    Envuelve GET /get_fake_reservations en GestiónReservas.
-    Útil para inspeccionar las reservas de prueba generadas al arrancar.
-    """
-    return _call_service("reservas", "GET", "/get_fake_reservations")
-
-
-@mcp.tool()
-def get_all_fake_payments_from_reservas() -> dict[str, Any]:
-    """
-    Envuelve GET /get_all_fake_payments en GestiónReservas.
-    """
-    return _call_service("reservas", "GET", "/get_all_fake_payments")
-
-
-@mcp.tool()
-def get_all_airplanes_routes_from_vuelos() -> dict[str, Any]:
-    """
-    Envuelve GET /get_all_airplanes_routes en GestiónVuelos.
-    """
-    return _call_service("vuelos", "GET", "/get_all_airplanes_routes")
-
-
-
-# ---------- HELPER: EJECUTAR PYTEST ----------
+# ---------------------------------------------------------------------------
+# HELPER: EJECUTAR PYTEST
+# ---------------------------------------------------------------------------
 
 def _run_pytest(pytest_args: list[str]) -> dict[str, Any]:
     """
@@ -256,7 +630,9 @@ def _run_pytest(pytest_args: list[str]) -> dict[str, Any]:
     }
 
 
-# ---------- TOOLS: EJECUTAR TESTS ----------
+# ---------------------------------------------------------------------------
+# TOOLS: EJECUTAR TESTS
+# ---------------------------------------------------------------------------
 
 @mcp.tool()
 def run_all_api_tests() -> dict[str, Any]:
@@ -270,6 +646,9 @@ def run_all_api_tests() -> dict[str, Any]:
 
 @mcp.tool()
 def run_api_test_file(test_file: str) -> dict[str, Any]:
+    """
+    Ejecuta un archivo de tests específico dentro de tests/api.
+    """
     if "/" in test_file or "\\" in test_file:
         return {
             "ok": False,
@@ -313,7 +692,118 @@ def run_single_api_test(test_file: str, test_name: str) -> dict[str, Any]:
     return _run_pytest([node_id])
 
 
-# ---------- TOOLS: LEER TESTS Y DOCS ----------
+@mcp.tool()
+def run_usuario_rag_tests() -> dict[str, Any]:
+    """
+    Ejecuta solo los tests RAG del microservicio Usuario
+    (asumiendo que sus nombres contienen 'usuario' y '_rag').
+    """
+    return _run_pytest(["tests/api", "-k", "usuario and rag"])
+
+
+@mcp.tool()
+def run_gestionreservas_rag_tests() -> dict[str, Any]:
+    """
+    Ejecuta solo los tests RAG del microservicio GestiónReservas.
+    """
+    return _run_pytest(["tests/api", "-k", "gestionreservas and rag"])
+
+
+@mcp.tool()
+def run_gestionvuelos_rag_tests() -> dict[str, Any]:
+    """
+    Ejecuta solo los tests RAG del microservicio GestiónVuelos.
+    """
+    return _run_pytest(["tests/api", "-k", "vuelos and rag"])
+
+
+# ---------------------------------------------------------------------------
+# HELPERS: LECTURA DE ARCHIVOS
+# ---------------------------------------------------------------------------
+
+def _read_repo_file(relative_path: str) -> dict[str, Any]:
+    """
+    Lee un archivo dentro del repositorio usando una ruta relativa a REPO_ROOT.
+
+    Ejemplos válidos:
+    - 'GestionVuelos/app.py'
+    - 'GestionReservas/app.py'
+
+    No permite rutas absolutas ni subir directorios (..).
+    """
+    rel = Path(relative_path)
+
+    # Proteger contra rutas absolutas o traversal tipo "../"
+    if rel.is_absolute() or ".." in rel.parts:
+        return {
+            "ok": False,
+            "error": "La ruta debe ser relativa al repo y no puede contener '..'.",
+        }
+
+    path = REPO_ROOT / rel
+
+    if not path.is_file():
+        return {
+            "ok": False,
+            "path": str(path),
+            "error": "No se encontró el archivo en la ruta esperada.",
+        }
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return {
+            "ok": False,
+            "path": str(path),
+            "error": f"Error al leer el archivo: {e}",
+        }
+
+    return {
+        "ok": True,
+        "path": str(path),
+        "content": content,
+    }
+
+
+def _read_text_from_dir(base_dir: Path, name: str, description: str) -> dict[str, Any]:
+    """
+    Helper genérico para leer un archivo de texto desde un directorio base.
+    description: texto para mensajes de error, por ejemplo 'archivo de test' o 'archivo .md'.
+    """
+    if "/" in name or "\\" in name:
+        return {
+            "ok": False,
+            "error": "Solo se permite el nombre del archivo, sin rutas.",
+        }
+
+    path = base_dir / name
+
+    if not path.is_file():
+        return {
+            "ok": False,
+            "path": str(path),
+            "error": f"No se encontró el {description} en la ruta esperada.",
+        }
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return {
+            "ok": False,
+            "path": str(path),
+            "error": f"Error al leer el {description}: {e}",
+        }
+
+    return {
+        "ok": True,
+        "path": str(path),
+        "content": content,
+    }
+
+
+# ---------------------------------------------------------------------------
+# TOOLS: LEER TESTS Y DOCS
+# ---------------------------------------------------------------------------
 
 @mcp.tool()
 def read_api_test_file(test_file: str) -> dict[str, Any]:
@@ -388,111 +878,6 @@ def list_rag_docs(
     }
 
 
-def _read_repo_file(relative_path: str) -> dict[str, Any]:
-    """
-    Lee un archivo dentro del repositorio usando una ruta relativa a REPO_ROOT.
-
-    Ejemplos válidos:
-    - 'GestionVuelos/app.py'
-    - 'GestionReservas/app.py'
-
-    No permite rutas absolutas ni subir directorios (..).
-    """
-    rel = Path(relative_path)
-
-    # Proteger contra rutas absolutas o traversal tipo "../"
-    if rel.is_absolute() or ".." in rel.parts:
-        return {
-            "ok": False,
-            "error": "La ruta debe ser relativa al repo y no puede contener '..'.",
-        }
-
-    path = REPO_ROOT / rel
-
-    if not path.is_file():
-        return {
-            "ok": False,
-            "path": str(path),
-            "error": "No se encontró el archivo en la ruta esperada.",
-        }
-
-    try:
-        content = path.read_text(encoding="utf-8")
-    except Exception as e:
-        return {
-            "ok": False,
-            "path": str(path),
-            "error": f"Error al leer el archivo: {e}",
-        }
-
-    return {
-        "ok": True,
-        "path": str(path),
-        "content": content,
-    }
-
-
-@mcp.tool()
-def run_usuario_rag_tests() -> dict[str, Any]:
-    """
-    Ejecuta solo los tests RAG del microservicio Usuario
-    (asumiendo que sus nombres contienen 'usuario' y '_rag').
-    """
-    return _run_pytest(["tests/api", "-k", "usuario and rag"])
-
-
-@mcp.tool()
-def run_gestionreservas_rag_tests() -> dict[str, Any]:
-    """
-    Ejecuta solo los tests RAG del microservicio GestiónReservas.
-    """
-    return _run_pytest(["tests/api", "-k", "gestionreservas and rag"])
-
-
-@mcp.tool()
-def run_gestionvuelos_rag_tests() -> dict[str, Any]:
-    """
-    Ejecuta solo los tests RAG del microservicio GestiónVuelos.
-    """
-    return _run_pytest(["tests/api", "-k", "vuelos and rag"])
-
-
-def _read_text_from_dir(base_dir: Path, name: str, description: str) -> dict[str, Any]:
-    """
-    Helper genérico para leer un archivo de texto desde un directorio base.
-    description: texto para mensajes de error, por ejemplo 'archivo de test' o 'archivo .md'.
-    """
-    if "/" in name or "\\" in name:
-        return {
-            "ok": False,
-            "error": "Solo se permite el nombre del archivo, sin rutas.",
-        }
-
-    path = base_dir / name
-
-    if not path.is_file():
-        return {
-            "ok": False,
-            "path": str(path),
-            "error": f"No se encontró el {description} en la ruta esperada.",
-        }
-
-    try:
-        content = path.read_text(encoding="utf-8")
-    except Exception as e:
-        return {
-            "ok": False,
-            "path": str(path),
-            "error": f"Error al leer el {description}: {e}",
-        }
-
-    return {
-        "ok": True,
-        "path": str(path),
-        "content": content,
-    }
-
-
 @mcp.tool()
 def list_all_md_docs() -> dict[str, Any]:
     """
@@ -518,17 +903,21 @@ def read_all_md_docs() -> dict[str, Any]:
     for path in sorted(DOCS_DIR.glob("*.md")):
         try:
             content = path.read_text(encoding="utf-8")
-            results.append({
-                "name": path.name,
-                "ok": True,
-                "content": content,
-            })
+            results.append(
+                {
+                    "name": path.name,
+                    "ok": True,
+                    "content": content,
+                }
+            )
         except Exception as e:
-            results.append({
-                "name": path.name,
-                "ok": False,
-                "error": f"Error al leer el archivo: {e}",
-            })
+            results.append(
+                {
+                    "name": path.name,
+                    "ok": False,
+                    "error": f"Error al leer el archivo: {e}",
+                }
+            )
 
     return {
         "ok": True,
@@ -549,11 +938,15 @@ def read_repo_file(relative_path: str) -> dict[str, Any]:
     return _read_repo_file(relative_path)
 
 
+# ---------------------------------------------------------------------------
+# MAIN
+# ---------------------------------------------------------------------------
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     mcp.run(
         transport="streamable-http",
         host="0.0.0.0",  # para exponerlo fuera de la máquina
         port=8000,
-        path="/mcp",     # ruta HTTP del endpoint MCP
+        path="/mcp",  # ruta HTTP del endpoint MCP
     )
