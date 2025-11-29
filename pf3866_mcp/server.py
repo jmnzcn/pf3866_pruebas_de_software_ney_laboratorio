@@ -114,6 +114,7 @@ def call_endpoint(
 
 @mcp.tool()
 def add_airplane(
+    airplane_id: int,
     model: str,
     manufacturer: str,
     year: int,
