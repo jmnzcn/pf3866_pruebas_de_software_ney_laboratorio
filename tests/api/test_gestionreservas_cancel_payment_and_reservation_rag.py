@@ -23,89 +23,30 @@ Comportamiento esperado (según app.py en GestiónReservas):
        }
 """
 
-import os
-import re
-import requests
 import pytest
 
-# Base URL del microservicio GestiónReservas
-BASE_URL_RESERVAS = os.getenv("GESTIONRESERVAS_BASE_URL", "http://localhost:5002")
-
-
-def _get_reservas(path: str, **kwargs) -> requests.Response:
-    url = f"{BASE_URL_RESERVAS}{path}"
-    return requests.get(url, timeout=20, **kwargs)
-
-
-def _delete_reservas(path: str, **kwargs) -> requests.Response:
-    url = f"{BASE_URL_RESERVAS}{path}"
-    return requests.delete(url, timeout=20, **kwargs)
-
-
-def _find_existing_payment_with_full_data() -> dict | None:
-    """
-    Retorna un pago existente con los campos mínimos necesarios
-    para que /cancel_payment_and_reservation funcione:
-
-        - payment_id (formato PAYxxxxxx)
-        - reservation_id (int)
-        - airplane_id
-        - seat_number
-
-    Si no encuentra, retorna None.
-    """
-    try:
-        r = _get_reservas("/get_all_fake_payments")
-    except Exception:
-        return None
-
-    if r.status_code != 200:
-        return None
-
-    try:
-        data = r.json()
-    except Exception:
-        return None
-
-    if not isinstance(data, list):
-        return None
-
-    for p in data:
-        if not isinstance(p, dict):
-            continue
-        pid = p.get("payment_id")
-        rid = p.get("reservation_id")
-        aid = p.get("airplane_id")
-        seat = p.get("seat_number")
-        if (
-            isinstance(pid, str)
-            and re.match(r"^PAY\d{6}$", pid)
-            and isinstance(rid, int)
-            and aid is not None
-            and isinstance(seat, str)
-        ):
-            return p
-
-    return None
+from gestionreservas_common import (
+    delete_reservas,
+    get_reservas,
+    find_existing_payment_with_full_data,
+)
 
 
 def test_gestionreservas_cancel_payment_and_reservation_formato_invalido_400():
     """
     payment_id con formato inválido (no 'PAY' + 6 dígitos, aún tras .upper()) -> 400.
     """
-    # Ojo: el endpoint hace payment_id.strip().upper() antes de validar,
-    # así que 'pay123456' se considera válido.
     invalid_ids = [
-        "XYZ123",      # no empieza en PAY
-        "123456",      # solo dígitos
-        "PAY123",      # menos de 6 dígitos
-        "PAY12345",    # menos de 6 dígitos
-        "PAY1234567",  # más de 6 dígitos
-        "PAYABCDEF",   # la parte numérica no son dígitos
+        "XYZ123",
+        "123456",
+        "PAY123",
+        "PAY12345",
+        "PAY1234567",
+        "PAYABCDEF",
     ]
 
     for bad_id in invalid_ids:
-        r = _delete_reservas(f"/cancel_payment_and_reservation/{bad_id}")
+        r = delete_reservas(f"/cancel_payment_and_reservation/{bad_id}")
 
         try:
             resp_json = r.json()
@@ -128,9 +69,9 @@ def test_gestionreservas_cancel_payment_and_reservation_no_existe_404():
     """
     payment_id con formato válido pero que no existe en `payments` -> 404.
     """
-    candidate_id = "PAY999999"  # ID poco probable que exista
+    candidate_id = "PAY999999"
 
-    r = _delete_reservas(f"/cancel_payment_and_reservation/{candidate_id}")
+    r = delete_reservas(f"/cancel_payment_and_reservation/{candidate_id}")
 
     try:
         resp_json = r.json()
@@ -140,7 +81,7 @@ def test_gestionreservas_cancel_payment_and_reservation_no_existe_404():
         msg_text = r.text
 
     assert r.status_code == 404, (
-        f"[GR_CANPAY_404] Se esperaba 404 para pago inexistente, "
+        "[GR_CANPAY_404] Se esperaba 404 para pago inexistente, "
         f"vino {r.status_code} {r.text}"
     )
 
@@ -154,18 +95,8 @@ def test_gestionreservas_cancel_payment_and_reservation_happy_path():
     """
     Caso feliz:
         Cancelar un pago y su reserva asociada, liberando el asiento.
-
-    Pasos:
-    1) Buscar un pago existente con datos completos (helper).
-    2) DELETE /cancel_payment_and_reservation/<payment_id>.
-    3) Verificar:
-       - status_code == 200
-       - message contiene "cancelación exitosa"
-       - deleted_payment.payment_id == solicitado
-       - deleted_reservation.reservation_id == reservation_id del pago
-    4) Verificar opcionalmente que el pago y la reserva ya no existan.
     """
-    pago = _find_existing_payment_with_full_data()
+    pago = find_existing_payment_with_full_data()
     if pago is None:
         pytest.skip(
             "[GR_CANPAY_OK] No se encontró ningún pago existente con datos completos; "
@@ -175,7 +106,7 @@ def test_gestionreservas_cancel_payment_and_reservation_happy_path():
     payment_id = pago["payment_id"]
     reservation_id = pago["reservation_id"]
 
-    r = _delete_reservas(f"/cancel_payment_and_reservation/{payment_id}")
+    r = delete_reservas(f"/cancel_payment_and_reservation/{payment_id}")
 
     assert (
         r.status_code == 200
@@ -185,7 +116,8 @@ def test_gestionreservas_cancel_payment_and_reservation_happy_path():
         resp_json = r.json()
     except Exception:
         pytest.fail(
-            f"[GR_CANPAY_OK] La respuesta no es JSON válido. Body crudo: {r.text}"
+            "[GR_CANPAY_OK] La respuesta no es JSON válido. "
+            f"Body crudo: {r.text}"
         )
 
     assert isinstance(resp_json, dict), (
@@ -214,17 +146,16 @@ def test_gestionreservas_cancel_payment_and_reservation_happy_path():
         f"esperado={payment_id!r}, respuesta={deleted_payment.get('payment_id')!r}"
     )
 
-    # Si había reserva asociada, debe coincidir el reservation_id
     if "reservation_id" in deleted_reservation:
         assert deleted_reservation.get("reservation_id") == reservation_id, (
             "[GR_CANPAY_OK] reservation_id en 'deleted_reservation' "
             "no coincide con el del pago. "
-            f"pago_res_id={reservation_id}, del_res_id={deleted_reservation.get('reservation_id')}"
+            f"pago_res_id={reservation_id}, "
+            f"del_res_id={deleted_reservation.get('reservation_id')}"
         )
 
-    # Comprobación opcional: el pago ya no debe existir
-    r_check = _get_reservas(f"/get_payment_by_id/{payment_id}")
-    if r_check.status_code != 400:  # 400 sería solo por formato raro, aquí es válido
+    r_check = get_reservas(f"/get_payment_by_id/{payment_id}")
+    if r_check.status_code != 400:
         try:
             msg_check = r_check.json().get("message", "")
         except Exception:
@@ -236,7 +167,6 @@ def test_gestionreservas_cancel_payment_and_reservation_happy_path():
         )
 
         msg_check_lower = msg_check.lower()
-        # Aceptamos ambas variantes: sin pagos o sin ese pago específico
         assert (
             "no se encontró ningún pago" in msg_check_lower
             or "no hay pagos generados aún" in msg_check_lower

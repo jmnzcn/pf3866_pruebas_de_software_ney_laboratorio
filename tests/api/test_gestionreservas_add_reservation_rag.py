@@ -30,64 +30,25 @@ D) Caso feliz:
      -> 201, mensaje de éxito, objeto "reservation" con campos clave.
 """
 
-import os
-import requests
 import pytest
 
-# Base URL de GestiónReservas (SUT)
-BASE_URL = os.getenv("GESTIONRESERVAS_BASE_URL", "http://localhost:5002")
-
-# Base URL de GestiónVuelos (sistema colaborador)
-GESTIONVUELOS_BASE_URL = os.getenv("GESTIONVUELOS_BASE_URL", "http://localhost:5001")
-
-
-def _get(path: str, **kwargs) -> requests.Response:
-    url = f"{BASE_URL}{path}"
-    return requests.get(url, **kwargs)
-
-
-def _post(path: str, **kwargs) -> requests.Response:
-    url = f"{BASE_URL}{path}"
-    return requests.post(url, **kwargs)
-
-
-def _get_vuelos(path: str, **kwargs) -> requests.Response:
-    url = f"{GESTIONVUELOS_BASE_URL}{path}"
-    return requests.get(url, **kwargs)
-
-
-def _make_valid_body(
-    airplane_id: int = 1,
-    airplane_route_id: int = 1,
-    seat_number: str = "1A",
-    status: str = "Reservado",
-) -> dict:
-    """
-    Cuerpo base válido a nivel de schema (sin garantizar coherencia con GestiónVuelos).
-    Se usa en pruebas de validación local (email, status, campos faltantes).
-    """
-    return {
-        "passport_number": "A12345678",
-        "full_name": "Pasajero Prueba",
-        "email": "correo.valido@example.com",
-        "phone_number": "+50688888888",
-        "emergency_contact_name": "Contacto Emergencia",
-        "emergency_contact_phone": "+50677777777",
-        "airplane_id": airplane_id,
-        "airplane_route_id": airplane_route_id,
-        "seat_number": seat_number,
-        "status": status,
-    }
+from gestionreservas_common import (
+    post_reservas,
+    get_vuelos,
+    make_add_reservation_body,
+    get_all_routes_from_vuelos,
+    find_route_and_free_seat,
+)
 
 
 # Cuerpos para las validaciones básicas (solo schema + lógica local)
-BODY_EMAIL_INVALIDO = _make_valid_body()
+BODY_EMAIL_INVALIDO = make_add_reservation_body()
 BODY_EMAIL_INVALIDO["email"] = "no-es-un-email"
 
-BODY_STATUS_INVALIDO = _make_valid_body()
+BODY_STATUS_INVALIDO = make_add_reservation_body()
 BODY_STATUS_INVALIDO["status"] = "Pendiente"
 
-BODY_CAMPO_FALTANTE = _make_valid_body()
+BODY_CAMPO_FALTANTE = make_add_reservation_body()
 BODY_CAMPO_FALTANTE.pop("seat_number", None)
 
 
@@ -97,7 +58,7 @@ BODY_CAMPO_FALTANTE.pop("seat_number", None)
         (
             "GR_ADDRES_BODY_VACIO_400",
             None,
-            500,
+            500,  # según implementación actual
             "Error interno del servidor",
         ),
         (
@@ -135,9 +96,9 @@ def test_gestionreservas_add_reservation_validaciones_basicas(
     - Campo requerido faltante -> 400 Error de validación.
     """
     if body is None:
-        r = _post("/add_reservation")
+        r = post_reservas("/add_reservation")
     else:
-        r = _post("/add_reservation", json=body)
+        r = post_reservas("/add_reservation", json=body)
 
     try:
         resp_json = r.json()
@@ -156,63 +117,6 @@ def test_gestionreservas_add_reservation_validaciones_basicas(
     )
 
 
-def _get_all_routes():
-    """
-    Helper de caja negra: obtiene rutas desde GestiónVuelos.
-    Devuelve lista (posiblemente vacía) o None si algo falla.
-    """
-    r = _get_vuelos("/get_all_airplanes_routes")
-    if r.status_code != 200:
-        return None
-    try:
-        data = r.json()
-    except Exception:
-        return None
-    if not isinstance(data, list):
-        return None
-    return data
-
-
-def _find_route_and_free_seat():
-    """
-    Helper de caja negra para el caso feliz y algunos casos de error.
-
-    Pasos:
-    1) GET /get_all_airplanes_routes en GestiónVuelos.
-    2) Por cada ruta, GET /get_airplane_seats/<airplane_id>/seats.
-    3) Devolver la primera combinación (ruta, asiento) donde el asiento esté Libre.
-    4) Si nada cumple, devolver None.
-    """
-    rutas = _get_all_routes()
-    if not rutas:
-        return None
-
-    for ruta in rutas:
-        airplane_id = ruta.get("airplane_id")
-        if not isinstance(airplane_id, int):
-            continue
-
-        r_seats = _get_vuelos(f"/get_airplane_seats/{airplane_id}/seats")
-        if r_seats.status_code != 200:
-            continue
-
-        try:
-            seats = r_seats.json()
-        except Exception:
-            continue
-
-        if not isinstance(seats, list):
-            continue
-
-        for seat in seats:
-            if not isinstance(seat, dict):
-                continue
-            if seat.get("status") == "Libre":
-                return ruta, seat
-
-    return None
-
-
 def test_gestionreservas_add_reservation_ruta_no_encontrada_400():
     """
     Caso: airplane_route_id inexistente en GestiónVuelos.
@@ -221,12 +125,11 @@ def test_gestionreservas_add_reservation_ruta_no_encontrada_400():
       - 400
       - Mensaje que incluya "Ruta con ID".
     """
-    rutas = _get_all_routes()
+    rutas = get_all_routes_from_vuelos()
     if not rutas:
         pytest.skip("[GR_ADDRES_RUTA_NO_EXISTE] No hay rutas disponibles en GestiónVuelos.")
 
-    # Usamos una ruta válida para extraer airplane_id y un asiento libre
-    pair = _find_route_and_free_seat()
+    pair = find_route_and_free_seat()
     if pair is None:
         pytest.skip("[GR_ADDRES_RUTA_NO_EXISTE] No se encontró ruta + asiento Libre para el test.")
 
@@ -234,19 +137,22 @@ def test_gestionreservas_add_reservation_ruta_no_encontrada_400():
     airplane_id = ruta_valida["airplane_id"]
     seat_number = seat_libre["seat_number"]
 
-    # Generar un airplane_route_id inexistente
-    route_ids = [r.get("airplane_route_id") for r in rutas if isinstance(r.get("airplane_route_id"), int)]
+    route_ids = [
+        r.get("airplane_route_id")
+        for r in rutas
+        if isinstance(r.get("airplane_route_id"), int)
+    ]
     if not route_ids:
         pytest.skip("[GR_ADDRES_RUTA_NO_EXISTE] No se encontraron airplane_route_id válidos.")
     invalid_route_id = max(route_ids) + 1000
 
-    body = _make_valid_body(
+    body = make_add_reservation_body(
         airplane_id=airplane_id,
         airplane_route_id=invalid_route_id,
         seat_number=seat_number,
     )
 
-    r = _post("/add_reservation", json=body)
+    r = post_reservas("/add_reservation", json=body)
 
     try:
         resp_json = r.json()
@@ -257,8 +163,9 @@ def test_gestionreservas_add_reservation_ruta_no_encontrada_400():
     assert r.status_code == 400, (
         f"[GR_ADDRES_RUTA_NO_EXISTE] Código inesperado: {r.status_code} {r.text}"
     )
-    assert "ruta con id".lower() in msg_text.lower(), (
-        f"[GR_ADDRES_RUTA_NO_EXISTE] No se encontró 'Ruta con ID' en el mensaje: {msg_text}"
+    assert "ruta con id" in msg_text.lower(), (
+        "[GR_ADDRES_RUTA_NO_EXISTE] No se encontró 'Ruta con ID' en el mensaje: "
+        f"{msg_text}"
     )
 
 
@@ -270,11 +177,10 @@ def test_gestionreservas_add_reservation_ruta_no_asociada_400():
       - 400
       - Mensaje que incluya 'no está asociada al avión'.
     """
-    rutas = _get_all_routes()
+    rutas = get_all_routes_from_vuelos()
     if not rutas:
         pytest.skip("[GR_ADDRES_RUTA_NO_ASOCIADA] No hay rutas disponibles en GestiónVuelos.")
 
-    # Agrupar rutas por airplane_id
     rutas_por_avion = {}
     for r in rutas:
         aid = r.get("airplane_id")
@@ -287,7 +193,6 @@ def test_gestionreservas_add_reservation_ruta_no_asociada_400():
             "para probar la ruta no asociada."
         )
 
-    # Tomar una ruta de un avión A, pero usar airplane_id de B
     airplane_ids = list(rutas_por_avion.keys())
     avion_a = airplane_ids[0]
     avion_b = airplane_ids[1]
@@ -295,14 +200,13 @@ def test_gestionreservas_add_reservation_ruta_no_asociada_400():
     ruta_a = rutas_por_avion[avion_a][0]
     route_id = ruta_a["airplane_route_id"]
 
-    # Construir body donde airplane_id != airplane_id de la ruta
-    body = _make_valid_body(
+    body = make_add_reservation_body(
         airplane_id=avion_b,
         airplane_route_id=route_id,
         seat_number="1A",
     )
 
-    r = _post("/add_reservation", json=body)
+    r = post_reservas("/add_reservation", json=body)
 
     try:
         resp_json = r.json()
@@ -313,7 +217,7 @@ def test_gestionreservas_add_reservation_ruta_no_asociada_400():
     assert r.status_code == 400, (
         f"[GR_ADDRES_RUTA_NO_ASOCIADA] Código inesperado: {r.status_code} {r.text}"
     )
-    assert "no está asociada al avión".lower() in msg_text.lower(), (
+    assert "no está asociada al avión" in msg_text.lower(), (
         f"[GR_ADDRES_RUTA_NO_ASOCIADA] Mensaje inesperado: {msg_text}"
     )
 
@@ -326,7 +230,7 @@ def test_gestionreservas_add_reservation_asiento_no_existe_400():
       - 400
       - Mensaje que incluya 'no existe para ese avión'.
     """
-    pair = _find_route_and_free_seat()
+    pair = find_route_and_free_seat()
     if pair is None:
         pytest.skip(
             "[GR_ADDRES_ASIENTO_NO_EXISTE] No se encontró ruta + asiento Libre para preparar el caso."
@@ -336,8 +240,7 @@ def test_gestionreservas_add_reservation_asiento_no_existe_400():
     airplane_id = ruta["airplane_id"]
     route_id = ruta["airplane_route_id"]
 
-    # Obtener todos los asientos del avión para evitar colisión accidental
-    r_seats = _get_vuelos(f"/get_airplane_seats/{airplane_id}/seats")
+    r_seats = get_vuelos(f"/get_airplane_seats/{airplane_id}/seats")
     if r_seats.status_code != 200:
         pytest.skip(
             "[GR_ADDRES_ASIENTO_NO_EXISTE] No se pudieron obtener asientos del avión."
@@ -352,18 +255,17 @@ def test_gestionreservas_add_reservation_asiento_no_existe_400():
 
     existing_seats = {s.get("seat_number") for s in seats if isinstance(s, dict)}
 
-    # Generar un seat_number que no exista
     fake_seat = "99Z"
     if fake_seat in existing_seats:
         fake_seat = "100Z"
 
-    body = _make_valid_body(
+    body = make_add_reservation_body(
         airplane_id=airplane_id,
         airplane_route_id=route_id,
         seat_number=fake_seat,
     )
 
-    r = _post("/add_reservation", json=body)
+    r = post_reservas("/add_reservation", json=body)
 
     try:
         resp_json = r.json()
@@ -374,7 +276,7 @@ def test_gestionreservas_add_reservation_asiento_no_existe_400():
     assert r.status_code == 400, (
         f"[GR_ADDRES_ASIENTO_NO_EXISTE] Código inesperado: {r.status_code} {r.text}"
     )
-    assert "no existe para ese avión".lower() in msg_text.lower(), (
+    assert "no existe para ese avión" in msg_text.lower(), (
         f"[GR_ADDRES_ASIENTO_NO_EXISTE] Mensaje inesperado: {msg_text}"
     )
 
@@ -388,7 +290,7 @@ def test_gestionreservas_add_reservation_asiento_no_libre_409():
       2) Intentar crear otra reserva con el mismo asiento.
       3) Esperar 409 y mensaje 'no está disponible'.
     """
-    pair = _find_route_and_free_seat()
+    pair = find_route_and_free_seat()
     if pair is None:
         pytest.skip(
             "[GR_ADDRES_ASIENTO_NO_LIBRE] No se encontró ruta + asiento Libre para el caso."
@@ -399,21 +301,19 @@ def test_gestionreservas_add_reservation_asiento_no_libre_409():
     route_id = ruta["airplane_route_id"]
     seat_number = seat_libre["seat_number"]
 
-    body = _make_valid_body(
+    body = make_add_reservation_body(
         airplane_id=airplane_id,
         airplane_route_id=route_id,
         seat_number=seat_number,
     )
 
-    # Primer intento: debería ser exitoso (201)
-    r1 = _post("/add_reservation", json=body)
+    r1 = post_reservas("/add_reservation", json=body)
     assert r1.status_code == 201, (
-        f"[GR_ADDRES_ASIENTO_NO_LIBRE] La reserva inicial no fue creada: "
+        "[GR_ADDRES_ASIENTO_NO_LIBRE] La reserva inicial no fue creada: "
         f"{r1.status_code} {r1.text}"
     )
 
-    # Segundo intento con el mismo asiento
-    r2 = _post("/add_reservation", json=body)
+    r2 = post_reservas("/add_reservation", json=body)
 
     try:
         resp_json = r2.json()
@@ -424,7 +324,7 @@ def test_gestionreservas_add_reservation_asiento_no_libre_409():
     assert r2.status_code == 409, (
         f"[GR_ADDRES_ASIENTO_NO_LIBRE] Código inesperado: {r2.status_code} {r2.text}"
     )
-    assert "no está disponible".lower() in msg_text.lower(), (
+    assert "no está disponible" in msg_text.lower(), (
         f"[GR_ADDRES_ASIENTO_NO_LIBRE] Mensaje inesperado: {msg_text}"
     )
 
@@ -445,7 +345,7 @@ def test_gestionreservas_add_reservation_happy_path():
          - Objeto 'reservation' con reservation_id, reservation_code, airplane_id,
            airplane_route_id, seat_number y status válido.
     """
-    pair = _find_route_and_free_seat()
+    pair = find_route_and_free_seat()
     if pair is None:
         pytest.skip(
             "[GR_ADDRES_OK_201] No se encontró ruta + asiento Libre para el caso feliz."
@@ -456,13 +356,13 @@ def test_gestionreservas_add_reservation_happy_path():
     route_id = ruta["airplane_route_id"]
     seat_number = seat_libre["seat_number"]
 
-    body = _make_valid_body(
+    body = make_add_reservation_body(
         airplane_id=airplane_id,
         airplane_route_id=route_id,
         seat_number=seat_number,
     )
 
-    r = _post("/add_reservation", json=body)
+    r = post_reservas("/add_reservation", json=body)
     assert r.status_code == 201, (
         f"[GR_ADDRES_OK_201] Código inesperado: {r.status_code} {r.text}"
     )
