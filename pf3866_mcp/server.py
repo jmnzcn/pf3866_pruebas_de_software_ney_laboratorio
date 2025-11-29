@@ -122,7 +122,7 @@ def add_airplane(
 ) -> dict[str, Any]:
     """Crea un avión de prueba llamando a /add_airplane en GestionVuelos."""
     body = {
-        "airplane_id": "",
+        "airplane_id": airplane_id,
         "model": model,
         "manufacturer": manufacturer,
         "year": year,
