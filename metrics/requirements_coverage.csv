@@ -1,0 +1,6 @@
+req_id,descripcion,test_files,has_automated_test
+R1,Crear reserva desde Usuario,"test_usuario_add_reservation_rag.py",True
+R2,Eliminar reserva desde Usuario,"test_usuario_delete_reservation_rag.py",True
+R3,Crear ruta de vuelo,"test_gestionvuelos_rag.py",True
+R4,Listar vuelos disponibles,"test_usuario_airplanes_lists_rag.py;test_gestionvuelos_rag.py",True
+

@@ -1,0 +1,4 @@
+id,endpoint_or_feature,classification,used_in_test_file,notes
+S1,/usuario/add_reservation,A,test_usuario_add_reservation_rag.py,"Caso feliz usado casi tal cual"
+S2,/usuario/delete_reservation,B,test_usuario_delete_reservation_rag.py,"Se ajustó mensaje esperado en segundo DELETE"
+

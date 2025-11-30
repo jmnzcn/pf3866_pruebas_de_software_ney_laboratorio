@@ -1,5 +1,7 @@
-import os, json
 import pytest
+pytest.importorskip("chromadb")
+
+import os, json
 from tests.ai.generators import gen_airplane_payloads
 from tests.ai.contracts import load_repo_spec, load_live_spec, diff_required_fields
 from tests.ai.mcp_client import http_get, http_post, sh
