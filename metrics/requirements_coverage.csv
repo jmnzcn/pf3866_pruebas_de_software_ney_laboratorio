@@ -1,6 +1,42 @@
 req_id,descripcion,test_files,has_automated_test
-R1,Crear reserva desde Usuario,"test_usuario_add_reservation_rag.py",True
-R2,Eliminar reserva desde Usuario,"test_usuario_delete_reservation_rag.py",True
-R3,Crear ruta de vuelo,"test_gestionvuelos_rag.py",True
-R4,Listar vuelos disponibles,"test_usuario_airplanes_lists_rag.py;test_gestionvuelos_rag.py",True
+R1,Crear avión en GestiónVuelos,"test_gestionvuelos_rag.py",True
+R2,Actualizar avión en GestiónVuelos,"test_gestionvuelos_rag.py",True
+R3,Eliminar avión en GestiónVuelos,"test_gestionvuelos_rag.py",True
+R4,Crear ruta de vuelo en GestiónVuelos,"test_gestionvuelos_rag.py",True
+R5,Actualizar ruta de vuelo en GestiónVuelos,"test_gestionvuelos_rag.py",True
+R6,Eliminar ruta de vuelo en GestiónVuelos,"test_gestionvuelos_rag.py",True
+R7,Listar aviones y rutas en GestiónVuelos,"test_gestionvuelos_rag.py",True
+R8,Consultar avión o ruta de vuelo por ID en GestiónVuelos,"test_gestionvuelos_rag.py",True
 
+R9,Crear reserva directamente en GestiónReservas,"test_gestionreservas_add_reservation_rag.py",True
+R10,Consultar reserva por ID y por código en GestiónReservas,"test_gestionreservas_get_reservation_by_id_rag.py;test_gestionreservas_get_reservation_by_code_rag.py",True
+R11,Eliminar reserva por ID en GestiónReservas,"test_gestionreservas_delete_reservation_by_id_rag.py",True
+R12,Editar reserva en GestiónReservas,"test_gestionreservas_edit_reservation_rag.py",True
+R13,Crear pago en GestiónReservas,"test_gestionreservas_create_payment_rag.py",True
+R14,Consultar pago por ID y listar pagos en GestiónReservas,"test_gestionreservas_get_payment_by_id_rag.py;test_gestionreservas_get_all_fake_payments_rag.py",True
+R15,Cancelar pago y reserva en GestiónReservas,"test_gestionreservas_cancel_payment_and_reservation_rag.py",True
+R16,Editar pago en GestiónReservas,"test_gestionreservas_edit_payment_rag.py",True
+R17,Obtener reservas iniciales/fake en GestiónReservas,"test_gestionreservas_get_fake_reservations_rag.py",True
+
+R18,Crear reserva vía microservicio Usuario,"test_usuario_add_reservation_rag.py",True
+R19,Actualizar reserva vía Usuario,"test_usuario_update_reservation_rag.py",True
+R20,Eliminar reserva vía Usuario,"test_usuario_delete_reservation_rag.py",True
+R21,Consultar reserva por ID y por código vía Usuario,"test_usuario_get_reservations_rag.py",True
+R22,Listar todas las reservas vía Usuario,"test_usuario_get_reservations_rag.py",True
+R23,Crear pago vía Usuario,"test_usuario_create_payment_rag.py",True
+R24,Consultar pago por ID y listar pagos vía Usuario,"test_usuario_get_payments_rag.py",True
+R25,Editar pago vía Usuario,"test_usuario_edit_payment_rag.py",True
+R26,Cancelar pago y reserva vía Usuario,"test_usuario_cancel_payment_and_reservation_rag.py",True
+
+R27,Listar aviones y rutas vía Usuario,"test_usuario_airplanes_lists_rag.py;test_usuario_flights_routes_seats_rag.py",True
+R28,Consultar ruta de vuelo por ID vía Usuario,"test_usuario_flights_routes_seats_rag.py",True
+R29,Consultar asientos de un avión y asientos libres vía Usuario,"test_usuario_flights_routes_seats_rag.py",True
+
+R30,Health check del microservicio Usuario,"test_usuario_health_rag.py",True
+
+R31,Contrato y estado de reserva en GestiónReservas (status y validaciones avanzadas),"test_reservas.py",True
+R32,Flujo end-to-end reserva + pago + cancelación vía Usuario,"test_usuario.py",True
+
+R33,Flujo AI workflow con cliente RAG usando ChromaDB,"test_ai_workflow.py",False
+
+R34,Comparar contrato repo vs servicio vivo para /add_airplane,"test_ai_workflow.py",True

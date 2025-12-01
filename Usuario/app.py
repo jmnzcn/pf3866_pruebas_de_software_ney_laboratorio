@@ -8,6 +8,7 @@ import re
 import sys
 from werkzeug.exceptions import BadRequest
 import uuid
+import json
 
 # Third-party Libraries
 import requests
@@ -40,6 +41,7 @@ logging.basicConfig(
 ## Configuración de Faker
 app = Flask(__name__)
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 # === Identificador de instancia (por proceso) ===
 INSTANCE_ID = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
@@ -314,6 +316,33 @@ class PaymentCreationSchema(Schema):
 
 ## Configuración de Swagger
 swagger = Swagger(app, template=swagger_template)
+
+
+@app.route("/openapi.json", methods=["GET"])
+def openapi_json():
+    """
+    Devuelve el OpenAPI spec del repo para ser consumido como 'live spec'
+    por pruebas de contrato en el microservicio Usuario.
+    """
+    try:
+        spec_path = os.path.join(BASE_DIR, "openapi.json")
+        if not os.path.exists(spec_path):
+            return jsonify({
+                "message": "Spec openapi.json no encontrado en la raíz del repo.",
+                "errors": {}
+            }), 500
+
+        with open(spec_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        return jsonify(data), 200
+
+    except Exception:
+        logging.exception("❌ Error al servir /openapi.json en Usuario")
+        return jsonify({
+            "message": "Error interno al cargar el OpenAPI spec.",
+            "errors": {}
+        }), 500
 
 
 ################################################################################################

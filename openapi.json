@@ -1,0 +1,335 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "GestionVuelos API",
+    "version": "1.0.0",
+    "description": "Especificación mínima para el endpoint /add_airplane de GestionVuelos."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5001",
+      "description": "Instancia local de GestionVuelos"
+    }
+  ],
+  "paths": {
+    "/add_airplane": {
+      "post": {
+        "summary": "Agregar un avión y generar sus asientos",
+        "description": "Crea un nuevo avión en el sistema de GestiónVuelos y genera su mapa de asientos.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "airplane_id",
+                  "model",
+                  "manufacturer",
+                  "year",
+                  "capacity"
+                ],
+                "properties": {
+                  "airplane_id": {
+                    "type": "integer",
+                    "description": "Identificador único del avión. Debe ser un entero positivo.",
+                    "example": 1
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "Modelo del avión (por ejemplo, 'A320').",
+                    "example": "A320"
+                  },
+                  "manufacturer": {
+                    "type": "string",
+                    "description": "Fabricante del avión (por ejemplo, 'Airbus').",
+                    "example": "Airbus"
+                  },
+                  "year": {
+                    "type": "integer",
+                    "description": "Año de fabricación. Debe ser un entero positivo.",
+                    "example": 2020
+                  },
+                  "capacity": {
+                    "type": "integer",
+                    "description": "Capacidad total de asientos. Debe ser un entero positivo.",
+                    "example": 180
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Avión y asientos agregados correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Avión y asientos agregados correctamente."
+                    },
+                    "airplane": {
+                      "type": "object",
+                      "properties": {
+                        "airplane_id": { "type": "integer" },
+                        "model": { "type": "string" },
+                        "manufacturer": { "type": "string" },
+                        "year": { "type": "integer" },
+                        "capacity": { "type": "integer" }
+                      },
+                      "required": [
+                        "airplane_id",
+                        "model",
+                        "manufacturer",
+                        "year",
+                        "capacity"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación en el body (campos faltantes, valores inválidos, etc.).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Error de validación"
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "example": {
+                        "year": ["El campo 'year' debe ser un entero positivo."],
+                        "capacity": ["El campo 'capacity' debe ser un entero positivo."]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: ya existe un avión con ese ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Ya existe un avión con ese ID."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Error interno del servidor."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/add_reservation": {
+      "post": {
+        "summary": "Crear una reserva en GestiónReservas",
+        "description": "Crea una nueva reserva asociada a un vuelo y asiento específicos.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "airplane_id",
+                  "airplane_route_id",
+                  "passport_number",
+                  "full_name",
+                  "email",
+                  "phone_number",
+                  "emergency_contact_name",
+                  "emergency_contact_phone",
+                  "seat_number",
+                  "status"
+                ],
+                "properties": {
+                  "airplane_id": {
+                    "type": "integer",
+                    "description": "ID del avión",
+                    "example": 1
+                  },
+                  "airplane_route_id": {
+                    "type": "integer",
+                    "description": "ID de la ruta de vuelo",
+                    "example": 1001
+                  },
+                  "passport_number": {
+                    "type": "string",
+                    "description": "Número de pasaporte del pasajero",
+                    "example": "A12345678"
+                  },
+                  "full_name": {
+                    "type": "string",
+                    "description": "Nombre completo del pasajero",
+                    "example": "Juan Pérez"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Correo electrónico del pasajero",
+                    "example": "juan.perez@example.com"
+                  },
+                  "phone_number": {
+                    "type": "string",
+                    "description": "Teléfono del pasajero",
+                    "example": "+50670000000"
+                  },
+                  "emergency_contact_name": {
+                    "type": "string",
+                    "description": "Nombre del contacto de emergencia",
+                    "example": "Ana Pérez"
+                  },
+                  "emergency_contact_phone": {
+                    "type": "string",
+                    "description": "Teléfono del contacto de emergencia",
+                    "example": "+50671111111"
+                  },
+                  "seat_number": {
+                    "type": "string",
+                    "description": "Número de asiento (por ejemplo, 12A)",
+                    "example": "12A"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Estado de la reserva (por ejemplo, Reservado)",
+                    "example": "Reservado"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reserva creada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Reserva creada exitosamente."
+                    },
+                    "reservation": {
+                      "type": "object",
+                      "properties": {
+                        "reservation_id": { "type": "integer" },
+                        "reservation_code": { "type": "string" },
+                        "airplane_id": { "type": "integer" },
+                        "airplane_route_id": { "type": "integer" },
+                        "seat_number": { "type": "string" },
+                        "status": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error de validación (campos faltantes o inválidos)."
+          },
+          "404": {
+            "description": "Ruta de vuelo no encontrada o no asociada."
+          },
+          "409": {
+            "description": "Conflicto (asiento no libre, etc.)."
+          }
+        }
+      }
+    },
+    "/usuario/add_reservation": {
+  "post": {
+    "summary": "Crea una reserva vía Usuario",
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": [
+              "passport_number",
+              "full_name",
+              "email",
+              "phone_number",
+              "emergency_contact_name",
+              "emergency_contact_phone",
+              "airplane_id",
+              "airplane_route_id",
+              "seat_number",
+              "status"
+            ],
+            "properties": {
+              "passport_number": { "type": "string" },
+              "full_name": { "type": "string" },
+              "email": { "type": "string", "format": "email" },
+              "phone_number": { "type": "string" },
+              "emergency_contact_name": { "type": "string" },
+              "emergency_contact_phone": { "type": "string" },
+              "airplane_id": { "type": "integer" },
+              "airplane_route_id": { "type": "integer" },
+              "seat_number": { "type": "string" },
+              "status": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": {
+        "description": "Reserva creada correctamente"
+      },
+      "201": {
+        "description": "Reserva creada (201)"
+      },
+      "400": {
+        "description": "Error de validación"
+      }
+    }
+  }
+}
+  
+  }
+} 
+

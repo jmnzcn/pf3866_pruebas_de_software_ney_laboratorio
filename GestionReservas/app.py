@@ -1,6 +1,8 @@
 # Standard Library
 import logging
 import os
+import json
+
 import random
 import string
 from datetime import datetime, timedelta
@@ -40,6 +42,9 @@ logging.basicConfig(
 ## Configuración de la aplicación Flask
 app = Flask(__name__)
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+
 # === Identificador de instancia (por proceso) ===
 INSTANCE_ID = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
 
@@ -52,8 +57,10 @@ def root():
 
 @app.route('/health', methods=['GET'])
 def health():
-    app.logger.info(">>> /health de GestionReservas llamado")
-    return jsonify({"status": "ok", "service": "reservas", "instance_id": INSTANCE_ID}), 200
+    payload = {"status": "ok", "service": "GestionReservas"}
+    resp = jsonify(payload)
+    resp.headers["X-Instance-Id"] = INSTANCE_ID
+    return resp, 200
 
 
 ## Configuración de Swagger
@@ -261,6 +268,33 @@ def generate_fake_reservations(n=3):
 # print("\n>> Reservas generadas:")
 # for r in airplanes_reservations:
 #  print(r)
+
+
+@app.route("/openapi.json", methods=["GET"])
+def openapi_json_reservas():
+    """
+    Devuelve el OpenAPI spec del repo para ser consumido como 'live spec'
+    por pruebas de contrato en GestiónReservas.
+    """
+    try:
+        spec_path = os.path.join(BASE_DIR, "openapi.json")
+        if not os.path.exists(spec_path):
+            return jsonify({
+                "message": "Spec openapi.json no encontrado en la raíz del repo.",
+                "errors": {}
+            }), 500
+
+        with open(spec_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+        return jsonify(data), 200
+
+    except Exception:
+        logging.exception("❌ Error al servir /openapi.json en GestiónReservas")
+        return jsonify({
+            "message": "Error interno al cargar el OpenAPI spec.",
+            "errors": {}
+        }), 500
 
 
 ## Otener todas las reservas generadas

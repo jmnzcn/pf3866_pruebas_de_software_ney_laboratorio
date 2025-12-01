@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="8" tests="167" time="973.902" timestamp="2025-11-30T01:45:41.864101-06:00" hostname="NeyFred"><testcase classname="" name="tests.api.test_ai_workflow" time="0.000"><skipped message="collection skipped">('C:\\UCR Maestria\\2025\\Semestre_2\\Pruebas de Software\\laboratorio\\tests\\api\\test_ai_workflow.py', 2, "Skipped: could not import 'chromadb': No module named 'chromadb'")</skipped></testcase><testcase classname="tests.api.test_gestionreservas_add_reservation_rag" name="test_gestionreservas_add_reservation_validaciones_basicas[GR_ADDRES_BODY_VACIO_400-None-500-Error interno del servidor]" time="2.151" /><testcase classname="tests.api.test_gestionreservas_add_reservation_rag" name="test_gestionreservas_add_reservation_validaciones_basicas[GR_ADDRES_EMAIL_INVALIDO_400-body1-400-Error de validaci\xf3n]" time="2.077" /><testcase classname="tests.api.test_gestionreservas_add_reservation_rag" name="test_gestionreservas_add_reservation_validaciones_basicas[GR_ADDRES_STATUS_INVALIDO_400-body2-400-Error de validaci\xf3n]" time="2.050" /><testcase classname="tests.api.test_gestionreservas_add_reservation_rag" name="test_gestionreservas_add_reservation_validaciones_basicas[GR_ADDRES_CAMPO_FALTANTE_400-body3-400-Error de validaci\xf3n]" time="2.064" /><testcase classname="tests.api.test_gestionreservas_add_reservation_rag" name="test_gestionreservas_add_reservation_ruta_no_encontrada_400" time="10.290" /><testcase classname="tests.api.test_gestionreservas_add_reservation_rag" name="test_gestionreservas_add_reservation_ruta_no_asociada_400" time="6.139" /><testcase classname="tests.api.test_gestionreservas_add_reservation_rag" name="test_gestionreservas_add_reservation_asiento_no_existe_400" time="12.390" /><testcase classname="tests.api.test_gestionreservas_add_reservation_rag" name="test_gestionreservas_add_reservation_asiento_no_libre_409" time="18.531" /><testcase classname="tests.api.test_gestionreservas_add_reservation_rag" name="test_gestionreservas_add_reservation_happy_path" time="12.355" /><testcase classname="tests.api.test_gestionreservas_cancel_payment_and_reservation_rag" name="test_gestionreservas_cancel_payment_and_reservation_formato_invalido_400" time="12.318" /><testcase classname="tests.api.test_gestionreservas_cancel_payment_and_reservation_rag" name="test_gestionreservas_cancel_payment_and_reservation_no_existe_404" time="2.047" /><testcase classname="tests.api.test_gestionreservas_cancel_payment_and_reservation_rag" name="test_gestionreservas_cancel_payment_and_reservation_happy_path" time="8.204" /><testcase classname="tests.api.test_gestionreservas_create_payment_rag" name="test_gestionreservas_create_payment_validaciones_basicas_y_404[GR_CPAY_RES_ID_INVALIDO_400-body0-400-El reservation_id debe ser un n\xfamero entero positivo.]" time="2.036" /><testcase classname="tests.api.test_gestionreservas_create_payment_rag" name="test_gestionreservas_create_payment_validaciones_basicas_y_404[GR_CPAY_METHOD_INVALIDO_400-body1-400-M\xe9todo de pago inv\xe1lido.]" time="2.062" /><testcase classname="tests.api.test_gestionreservas_create_payment_rag" name="test_gestionreservas_create_payment_validaciones_basicas_y_404[GR_CPAY_MONEDA_INVALIDA_400-body2-400-Moneda no soportada.]" time="2.033" /><testcase classname="tests.api.test_gestionreservas_create_payment_rag" name="test_gestionreservas_create_payment_validaciones_basicas_y_404[GR_CPAY_RES_NO_EXISTE_404-body3-404-no encontrada]" time="2.049" /><testcase classname="tests.api.test_gestionreservas_create_payment_rag" name="test_gestionreservas_create_payment_reserva_ya_tiene_pago_409" time="2.041"><skipped type="pytest.skip" message="[GR_CPAY_DUP_409] No se encontró ninguna reserva con pago; no se puede probar el caso de duplicado.">C:\UCR Maestria\2025\Semestre_2\Pruebas de Software\laboratorio\tests\api\test_gestionreservas_create_payment_rag.py:98: [GR_CPAY_DUP_409] No se encontró ninguna reserva con pago; no se puede probar el caso de duplicado.</skipped></testcase><testcase classname="tests.api.test_gestionreservas_create_payment_rag" name="test_gestionreservas_create_payment_happy_path" time="8.222" /><testcase classname="tests.api.test_gestionreservas_delete_payment_by_id_rag" name="test_gestionreservas_delete_payment_by_id_formato_invalido_400" time="12.326" /><testcase classname="tests.api.test_gestionreservas_delete_payment_by_id_rag" name="test_gestionreservas_delete_payment_by_id_no_existe_404" time="2.048" /><testcase classname="tests.api.test_gestionreservas_delete_payment_by_id_rag" name="test_gestionreservas_delete_payment_by_id_happy_path" time="4.135" /><testcase classname="tests.api.test_gestionreservas_delete_reservation_by_id_rag" name="test_gestionreservas_delete_reservation_by_id_validaciones_y_404[GR_DELRES_ID_CERO_400-/delete_reservation_by_id/0-400-El ID de reserva debe ser un n\xfamero positivo]" time="2.064" /><testcase classname="tests.api.test_gestionreservas_delete_reservation_by_id_rag" name="test_gestionreservas_delete_reservation_by_id_validaciones_y_404[GR_DELRES_NO_EXISTE_404-/delete_reservation_by_id/999999-404-Reserva no encontrada]" time="2.074" /><testcase classname="tests.api.test_gestionreservas_delete_reservation_by_id_rag" name="test_gestionreservas_delete_reservation_by_id_happy_path" time="10.313" /><testcase classname="tests.api.test_gestionreservas_edit_payment_rag" name="test_gestionreservas_edit_payment_validaciones_basicas[GR_EDITPAY_FMT_400-ABC-body0-400-formato del payment_id es inv\xe1lido-False]" time="2.044" /><testcase classname="tests.api.test_gestionreservas_edit_payment_rag" name="test_gestionreservas_edit_payment_validaciones_basicas[GR_EDITPAY_NO_EXISTE_404-PAY999999-body1-404-no se encontr\xf3 el pago con id-False]" time="2.059" /><testcase classname="tests.api.test_gestionreservas_edit_payment_rag" name="test_gestionreservas_edit_payment_validaciones_basicas[GR_EDITPAY_BODY_AUSENTE_415-REAL_FROM_FIXTURE-None-415-unsupported media type-True]" time="2.078"><skipped type="pytest.skip" message="[GR_EDITPAY_BODY_AUSENTE_415] No se encontró ningún pago en el sistema.">C:\UCR Maestria\2025\Semestre_2\Pruebas de Software\laboratorio\tests\api\test_gestionreservas_edit_payment_rag.py:74: [GR_EDITPAY_BODY_AUSENTE_415] No se encontró ningún pago en el sistema.</skipped></testcase><testcase classname="tests.api.test_gestionreservas_edit_payment_rag" name="test_gestionreservas_edit_payment_validaciones_basicas[GR_EDITPAY_METODO_INVALIDO_400-REAL_FROM_FIXTURE-body3-400-m\xe9todo de pago inv\xe1lido-False]" time="2.065"><skipped type="pytest.skip" message="[GR_EDITPAY_METODO_INVALIDO_400] No se encontró ningún pago en el sistema.">C:\UCR Maestria\2025\Semestre_2\Pruebas de Software\laboratorio\tests\api\test_gestionreservas_edit_payment_rag.py:74: [GR_EDITPAY_METODO_INVALIDO_400] No se encontró ningún pago en el sistema.</skipped></testcase><testcase classname="tests.api.test_gestionreservas_edit_payment_rag" name="test_gestionreservas_edit_payment_happy_path" time="2.076"><skipped type="pytest.skip" message="[GR_EDITPAY_OK] No se encontró ningún pago para probar el caso feliz.">C:\UCR Maestria\2025\Semestre_2\Pruebas de Software\laboratorio\tests\api\test_gestionreservas_edit_payment_rag.py:117: [GR_EDITPAY_OK] No se encontró ningún pago para probar el caso feliz.</skipped></testcase><testcase classname="tests.api.test_gestionreservas_edit_reservation_rag" name="test_gestionreservas_edit_reservation_validaciones_basicas[GR_EDITRES_CODE_MALFORMADO_400-ABC-body0-400-El c\xf3digo de reserva debe ser 6 caracteres alfanum\xe9ricos]" time="2.042" /><testcase classname="tests.api.test_gestionreservas_edit_reservation_rag" name="test_gestionreservas_edit_reservation_validaciones_basicas[GR_EDITRES_NO_EXISTE_404-ZZZ999-body1-404-Reserva no encontrada]" time="2.048" /><testcase classname="tests.api.test_gestionreservas_edit_reservation_rag" name="test_gestionreservas_edit_reservation_validaciones_basicas[GR_EDITRES_BODY_AUSENTE_400-REAL_FROM_FIXTURE-None-400-No se recibi\xf3 cuerpo JSON]" time="6.172" /><testcase classname="tests.api.test_gestionreservas_edit_reservation_rag" name="test_gestionreservas_edit_reservation_validaciones_basicas[GR_EDITRES_BODY_INCOMPLETO_400-REAL_FROM_FIXTURE-body3-400-exactamente estos campos]" time="6.145" /><testcase classname="tests.api.test_gestionreservas_edit_reservation_rag" name="test_gestionreservas_edit_reservation_validaciones_basicas[GR_EDITRES_BODY_CAMPO_EXTRA_400-REAL_FROM_FIXTURE-body4-400-exactamente estos campos]" time="6.200" /><testcase classname="tests.api.test_gestionreservas_edit_reservation_rag" name="test_gestionreservas_edit_reservation_asiento_no_existe_400" time="8.257" /><testcase classname="tests.api.test_gestionreservas_edit_reservation_rag" name="test_gestionreservas_edit_reservation_asiento_no_libre_409" time="12.421" /><testcase classname="tests.api.test_gestionreservas_edit_reservation_rag" name="test_gestionreservas_edit_reservation_happy_path_solo_contacto" time="6.217" /><testcase classname="tests.api.test_gestionreservas_edit_reservation_rag" name="test_gestionreservas_edit_reservation_happy_path_cambio_asiento" time="16.453" /><testcase classname="tests.api.test_gestionreservas_get_all_fake_payments_rag" name="test_gestionreservas_get_all_fake_payments_status_y_formato_basico" time="2.046" /><testcase classname="tests.api.test_gestionreservas_get_all_fake_payments_rag" name="test_gestionreservas_get_all_fake_payments_estructura_cuando_hay_pagos" time="2.065"><skipped type="pytest.skip" message="[GR_GETPAYS_SHAPE] No hay pagos generados; no se puede validar estructura de la lista.">C:\UCR Maestria\2025\Semestre_2\Pruebas de Software\laboratorio\tests\api\test_gestionreservas_get_all_fake_payments_rag.py:67: [GR_GETPAYS_SHAPE] No hay pagos generados; no se puede validar estructura de la lista.</skipped></testcase><testcase classname="tests.api.test_gestionreservas_get_fake_reservations_rag" name="test_gestionreservas_get_fake_reservations_status_y_mensaje" time="2.096" /><testcase classname="tests.api.test_gestionreservas_get_fake_reservations_rag" name="test_gestionreservas_get_fake_reservations_estructura_cuando_hay_reservas" time="2.069" /><testcase classname="tests.api.test_gestionreservas_get_payment_by_id_rag" name="test_gestionreservas_get_payment_by_id_formato_invalido_400[GR_GETPAY_FMT_400_XYZ123-XYZ123]" time="2.062" /><testcase classname="tests.api.test_gestionreservas_get_payment_by_id_rag" name="test_gestionreservas_get_payment_by_id_formato_invalido_400[GR_GETPAY_FMT_400_PAY123-PAY123]" time="2.100" /><testcase classname="tests.api.test_gestionreservas_get_payment_by_id_rag" name="test_gestionreservas_get_payment_by_id_formato_invalido_400[GR_GETPAY_FMT_400_123456-123456]" time="2.063" /><testcase classname="tests.api.test_gestionreservas_get_payment_by_id_rag" name="test_gestionreservas_get_payment_by_id_formato_invalido_400[GR_GETPAY_FMT_400_PAYABCDEF-PAYABCDEF]" time="2.060" /><testcase classname="tests.api.test_gestionreservas_get_payment_by_id_rag" name="test_gestionreservas_get_payment_by_id_no_existe_o_sin_pagos_404" time="2.062" /><testcase classname="tests.api.test_gestionreservas_get_payment_by_id_rag" name="test_gestionreservas_get_payment_by_id_happy_path" time="2.059"><skipped type="pytest.skip" message="[GR_GETPAY_OK] No se encontró ningún pago existente en /get_all_fake_payments; no se puede probar el caso feliz.">C:\UCR Maestria\2025\Semestre_2\Pruebas de Software\laboratorio\tests\api\test_gestionreservas_get_payment_by_id_rag.py:102: [GR_GETPAY_OK] No se encontró ningún pago existente en /get_all_fake_payments; no se puede probar el caso feliz.</skipped></testcase><testcase classname="tests.api.test_gestionreservas_get_reservation_by_code_rag" name="test_gestionreservas_get_reservation_by_code_validaciones_y_404[GR_GETRES_CODE_CORTO_400-/get_reservation_by_code/ABC12-400-string alfanum\xe9rico de 6 caracteres]" time="2.049" /><testcase classname="tests.api.test_gestionreservas_get_reservation_by_code_rag" name="test_gestionreservas_get_reservation_by_code_validaciones_y_404[GR_GETRES_CODE_CHAR_INVALIDO_400-/get_reservation_by_code/ABC12--400-string alfanum\xe9rico de 6 caracteres]" time="2.075" /><testcase classname="tests.api.test_gestionreservas_get_reservation_by_code_rag" name="test_gestionreservas_get_reservation_by_code_validaciones_y_404[GR_GETRES_NO_EXISTE_404-/get_reservation_by_code/ZZZ999-404-Reserva no encontrada]" time="2.072" /><testcase classname="tests.api.test_gestionreservas_get_reservation_by_code_rag" name="test_gestionreservas_get_reservation_by_code_happy_path" time="6.157" /><testcase classname="tests.api.test_gestionreservas_get_reservation_by_id_rag" name="test_gestionreservas_get_reservation_by_id_validaciones_y_404[GR_GETRESID_NO_NUM_ABC_400-/get_reservation_by_id/abc-400-El ID de reserva debe ser un n\xfamero entero positivo.]" time="2.060" /><testcase classname="tests.api.test_gestionreservas_get_reservation_by_id_rag" name="test_gestionreservas_get_reservation_by_id_validaciones_y_404[GR_GETRESID_NO_NUM_DECIMAL_400-/get_reservation_by_id/10.5-400-El ID de reserva debe ser un n\xfamero entero positivo.]" time="2.048" /><testcase classname="tests.api.test_gestionreservas_get_reservation_by_id_rag" name="test_gestionreservas_get_reservation_by_id_validaciones_y_404[GR_GETRESID_CERO_400-/get_reservation_by_id/0-400-El ID de reserva debe ser un n\xfamero positivo mayor que cero.]" time="2.061" /><testcase classname="tests.api.test_gestionreservas_get_reservation_by_id_rag" name="test_gestionreservas_get_reservation_by_id_validaciones_y_404[GR_GETRESID_NEGATIVO_400-/get_reservation_by_id/-1-400-El ID de reserva debe ser un n\xfamero positivo mayor que cero.]" time="2.065" /><testcase classname="tests.api.test_gestionreservas_get_reservation_by_id_rag" name="test_gestionreservas_get_reservation_by_id_validaciones_y_404[GR_GETRESID_NO_EXISTE_404-/get_reservation_by_id/999999-404-Reserva no encontrada]" time="2.059" /><testcase classname="tests.api.test_gestionreservas_get_reservation_by_id_rag" name="test_gestionreservas_get_reservation_by_id_happy_path" time="6.223" /><testcase classname="tests.api.test_gestionvuelos" name="test_health_and_instance_header" time="6.194" /><testcase classname="tests.api.test_gestionvuelos" name="test_state_endpoint" time="2.063" /><testcase classname="tests.api.test_gestionvuelos" name="test_add_airplane_and_get_by_id" time="8.263" /><testcase classname="tests.api.test_gestionvuelos" name="test_add_airplane_duplicate_and_validation" time="8.196" /><testcase classname="tests.api.test_gestionvuelos" name="test_add_airplane_validation_errors_param[payload0-year]" time="2.068" /><testcase classname="tests.api.test_gestionvuelos" name="test_add_airplane_validation_errors_param[payload1-capacity]" time="2.069" /><testcase classname="tests.api.test_gestionvuelos" name="test_update_airplane_and_noop" time="10.289" /><testcase classname="tests.api.test_gestionvuelos" name="test_delete_airplane_and_cascade_seats" time="8.276" /><testcase classname="tests.api.test_gestionvuelos" name="test_seats_grouped_and_update_status" time="8.270"><failure message="assert None == 'Reservado'&#10; +  where None = &lt;built-in method get of dict object at 0x00000161DF6A06C0&gt;('status')&#10; +    where &lt;built-in method get of dict object at 0x00000161DF6A06C0&gt; = {}.get&#10; +      where {} = &lt;built-in method get of dict object at 0x00000161DF6A0B40&gt;('asiento', {})&#10; +        where &lt;built-in method get of dict object at 0x00000161DF6A0B40&gt; = {'message': &quot;El asiento 1A ya tenía el estado 'Reservado'.&quot;}.get">service_up = True
+airplane_factory = &lt;function airplane_factory.&lt;locals&gt;._create_airplane at 0x00000161DF6951C0&gt;
+
+    def test_seats_grouped_and_update_status(service_up, airplane_factory):
+        # Crea un avión con 6 asientos para probar
+        aid, _ = airplane_factory(capacity=6)
+    
+        # Lista seats por avión
+        r_seats, seats = _get_json(f"/get_airplane_seats/{aid}/seats")
+        assert r_seats.status_code == 200
+        assert isinstance(seats, list) and len(seats) == 6
+        seat = seats[0]
+        sn = seat["seat_number"]
+    
+        # Actualiza estado de un asiento válido
+        r_upd, body = _put_json(
+            f"/update_seat_status/{aid}/seats/{sn}", {"status": "Reservado"}
+        )
+        assert r_upd.status_code == 200
+&gt;       assert body.get("asiento", {}).get("status") == "Reservado"
+E       assert None == 'Reservado'
+E        +  where None = &lt;built-in method get of dict object at 0x00000161DF6A06C0&gt;('status')
+E        +    where &lt;built-in method get of dict object at 0x00000161DF6A06C0&gt; = {}.get
+E        +      where {} = &lt;built-in method get of dict object at 0x00000161DF6A0B40&gt;('asiento', {})
+E        +        where &lt;built-in method get of dict object at 0x00000161DF6A0B40&gt; = {'message': "El asiento 1A ya tenía el estado 'Reservado'."}.get
+
+tests\api\test_gestionvuelos.py:372: AssertionError</failure></testcase><testcase classname="tests.api.test_gestionvuelos" name="test_update_seat_status_invalid_numbers[XYZ99]" time="8.302" /><testcase classname="tests.api.test_gestionvuelos" name="test_update_seat_status_invalid_numbers[123]" time="8.219" /><testcase classname="tests.api.test_gestionvuelos" name="test_update_seat_status_invalid_numbers[AAAAA]" time="8.269" /><testcase classname="tests.api.test_gestionvuelos" name="test_update_seat_status_invalid_numbers[ALL]" time="8.183" /><testcase classname="tests.api.test_gestionvuelos" name="test_update_seat_status_invalid_numbers[*]" time="8.189" /><testcase classname="tests.api.test_gestionvuelos" name="test_get_random_free_seat_and_free_seat" time="10.357" /><testcase classname="tests.api.test_gestionvuelos" name="test_add_route_and_get_all" time="10.341" /><testcase classname="tests.api.test_gestionvuelos" name="test_get_airplanes_route_by_id_and_not_found" time="12.452" /><testcase classname="tests.api.test_gestionvuelos" name="test_update_airplane_route_by_id" time="10.330" /><testcase classname="tests.api.test_gestionvuelos" name="test_delete_airplane_route_by_id" time="12.417" /><testcase classname="tests.api.test_gestionvuelos" name="test_openapi_present_optional" time="4.147" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_rag" name="test_add_airplane_rag_cases[ADD_OK_01-happy-201-Avi\xf3n y asientos agregados-None]" time="4.153" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_rag" name="test_add_airplane_rag_cases[ADD_ERR_ID_DUP-id_dup-400-Ya existe un avi\xf3n con ese ID-None]" time="4.153" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_rag" name="test_add_airplane_rag_cases[ADD_ERR_FALTANTES-missing_fields-400-Faltan campos obligatorios-None]" time="2.060" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_rag" name="test_add_airplane_rag_cases[ADD_ERR_EXTRAS-extra_fields-400-Campos no v\xe1lidos-None]" time="2.053" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_rag" name="test_add_airplane_rag_cases[ADD_ERR_YEAR-year_zero-400-El campo 'year' debe ser un entero positivo-None]" time="2.087" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_rag" name="test_add_airplane_rag_cases[ADD_ERR_CAPACITY-capacity_zero-400-Errores de validaci\xf3n-capacity]" time="2.102" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_rag" name="test_add_airplane_rag_cases[ADD_ERR_BODY_VACIO-empty_body-400-No se recibi\xf3 ning\xfan cuerpo JSON-None]" time="2.060" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_route_rag" name="test_add_airplane_route_rag_cases[ROUTE_OK_01-happy-201-Ruta agregada con \xe9xito-None]" time="6.249" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_route_rag" name="test_add_airplane_route_rag_cases[ROUTE_ERR_AIRPLANE_NO_EXISTE-airplane_not_exists-400-El avi\xf3n especificado no existe-airplane_id]" time="4.167" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_route_rag" name="test_add_airplane_route_rag_cases[ROUTE_ERR_MONEDA-invalid_currency-400-Error de validaci\xf3n-Moneda]" time="4.122" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_route_rag" name="test_add_airplane_route_rag_cases[ROUTE_ERR_FECHAS-arrival_before_departure-400-La hora de llegada debe ser posterior a la de salida-arrival_time]" time="4.115" /><testcase classname="tests.api.test_gestionvuelos_add_airplane_route_rag" name="test_add_airplane_route_rag_cases[ROUTE_ERR_ID_DUP-duplicate_id-400-Ya existe una ruta con ID-airplane_route_id]" time="6.235" /><testcase classname="tests.api.test_gestionvuelos_delete_airplane_by_id_rag" name="test_delete_airplane_rag[DEL_PLANE_OK_EXISTENTE-happy-200-eliminado exitosamente]" time="8.238" /><testcase classname="tests.api.test_gestionvuelos_delete_airplane_by_id_rag" name="test_delete_airplane_rag[DEL_PLANE_ID_INVALIDO-id_invalid-400-entero positivo]" time="2.082" /><testcase classname="tests.api.test_gestionvuelos_delete_airplane_by_id_rag" name="test_delete_airplane_rag[DEL_PLANE_ID_NO_EXISTE-id_not_found-404-no encontrado]" time="2.063" /><testcase classname="tests.api.test_gestionvuelos_delete_airplane_route_by_id_rag" name="test_delete_route_rag[DEL_ROUTE_OK_EXISTENTE-happy-200-Ruta eliminada con \xe9xito]" time="8.335" /><testcase classname="tests.api.test_gestionvuelos_delete_airplane_route_by_id_rag" name="test_delete_route_rag[DEL_ROUTE_ID_INVALIDO-id_invalid-400-entero positivo]" time="2.069" /><testcase classname="tests.api.test_gestionvuelos_delete_airplane_route_by_id_rag" name="test_delete_route_rag[DEL_ROUTE_ID_NO_EXISTE-id_not_found-404-no encontrada]" time="2.078" /><testcase classname="tests.api.test_gestionvuelos_get_airplane_by_id_rag" name="test_get_airplane_by_id_rag[GET_AIRPLANE_OK_EXISTENTE-existing-200-None]" time="6.143" /><testcase classname="tests.api.test_gestionvuelos_get_airplane_by_id_rag" name="test_get_airplane_by_id_rag[GET_AIRPLANE_ID_INVALIDO-id_invalid-400-entero positivo]" time="2.057" /><testcase classname="tests.api.test_gestionvuelos_get_airplane_by_id_rag" name="test_get_airplane_by_id_rag[GET_AIRPLANE_ID_NO_EXISTE-id_not_found-404-no encontrado]" time="2.059" /><testcase classname="tests.api.test_gestionvuelos_get_airplanes_rag" name="test_get_airplanes_rag_basic" time="4.110" /><testcase classname="tests.api.test_gestionvuelos_get_airplanes_route_by_id_rag" name="test_get_route_by_id_rag[GET_ROUTE_OK_EXISTENTE-existing-200-None]" time="8.266" /><testcase classname="tests.api.test_gestionvuelos_get_airplanes_route_by_id_rag" name="test_get_route_by_id_rag[GET_ROUTE_ID_INVALIDO-id_invalid-400-entero positivo]" time="2.059" /><testcase classname="tests.api.test_gestionvuelos_get_airplanes_route_by_id_rag" name="test_get_route_by_id_rag[GET_ROUTE_ID_NO_EXISTE-id_not_found-404-no encontrada]" time="2.084" /><testcase classname="tests.api.test_gestionvuelos_get_all_airplanes_routes_rag" name="test_get_all_routes_rag_basic" time="4.117" /><testcase classname="tests.api.test_gestionvuelos_update_airplane_rag" name="test_update_airplane_rag_cases[UPD_OK_CAMBIA_MODEL_Y_CAPACITY-happy-200-actualizado con \xe9xito-None]" time="8.265" /><testcase classname="tests.api.test_gestionvuelos_update_airplane_rag" name="test_update_airplane_rag_cases[UPD_FALTAN_CAMPOS-missing_fields-400-Faltan campos obligatorios-None]" time="6.183" /><testcase classname="tests.api.test_gestionvuelos_update_airplane_rag" name="test_update_airplane_rag_cases[UPD_CAMPOS_EXTRAS-extra_fields-400-campos no v\xe1lidos-None]" time="6.140" /><testcase classname="tests.api.test_gestionvuelos_update_airplane_rag" name="test_update_airplane_rag_cases[UPD_YEAR_INVALIDO-year_zero-400-Errores de validaci\xf3n-year]" time="6.209" /><testcase classname="tests.api.test_reservas" name="test_crear_reserva_contrato_y_estado" time="93.134"><failure message="AssertionError: El backend rechazó todos los valores probados para 'status'. Revisa tu esquema real.&#10;assert 400 in (200, 201)&#10; +  where 400 = &lt;Response [400]&gt;.status_code">def test_crear_reserva_contrato_y_estado():
+        # Ajusta host/puerto si aplica
+        payload_base = {
+            "passport_number": "A1234567",
+            "full_name": "Juan Perez",
+            "email": "jp@example.com",
+            "phone_number": "+50670000000",
+            "emergency_contact_name": "Ana",
+            "emergency_contact_phone": "+50671111111",
+            "airplane_id": 1,           # entero requerido por tu schema
+            "airplane_route_id": 1001,  # entero requerido por tu schema
+            "seat_number": "12A",
+        }
+    
+        # 1) Intentar leer enum real desde OpenAPI
+        enum_vals = _fetch_status_enum_from_spec()
+        print("DEBUG enum desde spec:", enum_vals)
+    
+        # 2) Candidatos de respaldo si el spec no expone enum
+        fallbacks = [
+            # mayúsculas inglés
+            "CREATED","CONFIRMED","PENDING","BOOKED","ACTIVE","ISSUED","PAID","RESERVED",
+            # minúsculas inglés
+            "created","confirmed","pending","booked","active","issued","paid","reserved",
+            # español
+            "CREADA","CONFIRMADA","PENDIENTE","RESERVADA","ACTIVA","EMITIDA","PAGADA",
+            "creada","confirmada","pendiente","reservada","activa","emitida","pagada",
+        ]
+        # 3) También probar numéricos típicos de Enum (0..9)
+        numeric = list(range(0,10))
+    
+        candidates = enum_vals or fallbacks + numeric
+    
+        r = _try_create(payload_base, candidates)
+&gt;       assert r.status_code in (200, 201), "El backend rechazó todos los valores probados para 'status'. Revisa tu esquema real."
+E       AssertionError: El backend rechazó todos los valores probados para 'status'. Revisa tu esquema real.
+E       assert 400 in (200, 201)
+E        +  where 400 = &lt;Response [400]&gt;.status_code
+
+tests\api\test_reservas.py:93: AssertionError</failure></testcase><testcase classname="tests.api.test_usuario" name="test_usuario_health_contract" time="4.146" /><testcase classname="tests.api.test_usuario" name="test_usuario_openapi_present_optional" time="4.155" /><testcase classname="tests.api.test_usuario" name="test_usuario_end_to_end_reservation_payment_and_cancel" time="24.469"><failure message="requests.exceptions.ReadTimeout: HTTPConnectionPool(host='localhost', port=5003): Read timed out. (read timeout=10)">self = &lt;urllib3.connectionpool.HTTPConnectionPool object at 0x00000161DF6884B0&gt;
+conn = &lt;urllib3.connection.HTTPConnection object at 0x00000161DF487DF0&gt;, method = 'POST'
+url = '/usuario/add_reservation'
+body = b'{"passport_number": "E2E123456", "full_name": "Test Usuario ZOYN6Q", "email": "e2e+ICATVA@example.com", "phone_numbe..._contact_phone": "+50681111111", "airplane_id": 1, "airplane_route_id": 1, "seat_number": "1B", "status": "Reservado"}'
+headers = {'User-Agent': 'python-requests/2.32.3', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Content-Length': '306', 'Content-Type': 'application/json'}
+retries = Retry(total=0, connect=None, read=False, redirect=None, status=None)
+timeout = Timeout(connect=10, read=10, total=None), chunked = False
+response_conn = &lt;urllib3.connection.HTTPConnection object at 0x00000161DF487DF0&gt;, preload_content = False
+decode_content = False, enforce_content_length = True
+
+    def _make_request(
+        self,
+        conn: BaseHTTPConnection,
+        method: str,
+        url: str,
+        body: _TYPE_BODY | None = None,
+        headers: typing.Mapping[str, str] | None = None,
+        retries: Retry | None = None,
+        timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
+        chunked: bool = False,
+        response_conn: BaseHTTPConnection | None = None,
+        preload_content: bool = True,
+        decode_content: bool = True,
+        enforce_content_length: bool = True,
+    ) -&gt; BaseHTTPResponse:
+        """
+        Perform a request on a given urllib connection object taken from our
+        pool.
+    
+        :param conn:
+            a connection from one of our connection pools
+    
+        :param method:
+            HTTP request method (such as GET, POST, PUT, etc.)
+    
+        :param url:
+            The URL to perform the request on.
+    
+        :param body:
+            Data to send in the request body, either :class:`str`, :class:`bytes`,
+            an iterable of :class:`str`/:class:`bytes`, or a file-like object.
+    
+        :param headers:
+            Dictionary of custom headers to send, such as User-Agent,
+            If-None-Match, etc. If None, pool headers are used. If provided,
+            these headers completely replace any pool-specific headers.
+    
+        :param retries:
+            Configure the number of retries to allow before raising a
+            :class:`~urllib3.exceptions.MaxRetryError` exception.
+    
+            Pass ``None`` to retry until you receive a response. Pass a
+            :class:`~urllib3.util.retry.Retry` object for fine-grained control
+            over different types of retries.
+            Pass an integer number to retry connection errors that many times,
+            but no other types of errors. Pass zero to never retry.
+    
+            If ``False``, then retries are disabled and any exception is raised
+            immediately. Also, instead of raising a MaxRetryError on redirects,
+            the redirect response will be returned.
+    
+        :type retries: :class:`~urllib3.util.retry.Retry`, False, or an int.
+    
+        :param timeout:
+            If specified, overrides the default timeout for this one
+            request. It may be a float (in seconds) or an instance of
+            :class:`urllib3.util.Timeout`.
+    
+        :param chunked:
+            If True, urllib3 will send the body using chunked transfer
+            encoding. Otherwise, urllib3 will send the body using the standard
+            content-length form. Defaults to False.
+    
+        :param response_conn:
+            Set this to ``None`` if you will handle releasing the connection or
+            set the connection to have the response release it.
+    
+        :param preload_content:
+          If True, the response's body will be preloaded during construction.
+    
+        :param decode_content:
+            If True, will attempt to decode the body based on the
+            'content-encoding' header.
+    
+        :param enforce_content_length:
+            Enforce content length checking. Body returned by server must match
+            value of Content-Length header, if present. Otherwise, raise error.
+        """
+        self.num_requests += 1
+    
+        timeout_obj = self._get_timeout(timeout)
+        timeout_obj.start_connect()
+        conn.timeout = Timeout.resolve_default_timeout(timeout_obj.connect_timeout)
+    
+        try:
+            # Trigger any extra validation we need to do.
+            try:
+                self._validate_conn(conn)
+            except (SocketTimeout, BaseSSLError) as e:
+                self._raise_timeout(err=e, url=url, timeout_value=conn.timeout)
+                raise
+    
+        # _validate_conn() starts the connection to an HTTPS proxy
+        # so we need to wrap errors with 'ProxyError' here too.
+        except (
+            OSError,
+            NewConnectionError,
+            TimeoutError,
+            BaseSSLError,
+            CertificateError,
+            SSLError,
+        ) as e:
+            new_e: Exception = e
+            if isinstance(e, (BaseSSLError, CertificateError)):
+                new_e = SSLError(e)
+            # If the connection didn't successfully connect to it's proxy
+            # then there
+            if isinstance(
+                new_e, (OSError, NewConnectionError, TimeoutError, SSLError)
+            ) and (conn and conn.proxy and not conn.has_connected_to_proxy):
+                new_e = _wrap_proxy_error(new_e, conn.proxy.scheme)
+            raise new_e
+    
+        # conn.request() calls http.client.*.request, not the method in
+        # urllib3.request. It also calls makefile (recv) on the socket.
+        try:
+            conn.request(
+                method,
+                url,
+                body=body,
+                headers=headers,
+                chunked=chunked,
+                preload_content=preload_content,
+                decode_content=decode_content,
+                enforce_content_length=enforce_content_length,
+            )
+    
+        # We are swallowing BrokenPipeError (errno.EPIPE) since the server is
+        # legitimately able to close the connection after sending a valid response.
+        # With this behaviour, the received response is still readable.
+        except BrokenPipeError:
+            pass
+        except OSError as e:
+            # MacOS/Linux
+            # EPROTOTYPE and ECONNRESET are needed on macOS
+            # https://erickt.github.io/blog/2014/11/19/adventures-in-debugging-a-potential-osx-kernel-bug/
+            # Condition changed later to emit ECONNRESET instead of only EPROTOTYPE.
+            if e.errno != errno.EPROTOTYPE and e.errno != errno.ECONNRESET:
+                raise
+    
+        # Reset the timeout for the recv() on the socket
+        read_timeout = timeout_obj.read_timeout
+    
+        if not conn.is_closed:
+            # In Python 3 socket.py will catch EAGAIN and return None when you
+            # try and read into the file pointer created by http.client, which
+            # instead raises a BadStatusLine exception. Instead of catching
+            # the exception and assuming all BadStatusLine exceptions are read
+            # timeouts, check for a zero timeout before making the request.
+            if read_timeout == 0:
+                raise ReadTimeoutError(
+                    self, url, f"Read timed out. (read timeout={read_timeout})"
+                )
+            conn.timeout = read_timeout
+    
+        # Receive the response from the server
+        try:
+&gt;           response = conn.getresponse()
+                       ^^^^^^^^^^^^^^^^^^
+
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py:534: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connection.py:516: in getresponse
+    httplib_response = super().getresponse()
+                       ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\http\client.py:1430: in getresponse
+    response.begin()
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\http\client.py:331: in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\http\client.py:292: in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;socket.SocketIO object at 0x00000161DF67E8F0&gt;, b = &lt;memory at 0x00000161DF5668C0&gt;
+
+    def readinto(self, b):
+        """Read up to len(b) bytes into the writable buffer *b* and return
+        the number of bytes read.  If the socket is non-blocking and no bytes
+        are available, None is returned.
+    
+        If *b* is non-empty, a 0 return value indicates that the connection
+        was shutdown at the other end.
+        """
+        self._checkClosed()
+        self._checkReadable()
+        if self._timeout_occurred:
+            raise OSError("cannot read from timed out object")
+        try:
+&gt;           return self._sock.recv_into(b)
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+E           TimeoutError: timed out
+
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\socket.py:719: TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;requests.adapters.HTTPAdapter object at 0x00000161DF6863D0&gt;, request = &lt;PreparedRequest [POST]&gt;
+stream = False, timeout = Timeout(connect=10, read=10, total=None), verify = True, cert = None
+proxies = OrderedDict()
+
+    def send(
+        self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
+    ):
+        """Sends PreparedRequest object. Returns Response object.
+    
+        :param request: The :class:`PreparedRequest &lt;PreparedRequest&gt;` being sent.
+        :param stream: (optional) Whether to stream the request content.
+        :param timeout: (optional) How long to wait for the server to send
+            data before giving up, as a float, or a :ref:`(connect timeout,
+            read timeout) &lt;timeouts&gt;` tuple.
+        :type timeout: float or tuple or urllib3 Timeout object
+        :param verify: (optional) Either a boolean, in which case it controls whether
+            we verify the server's TLS certificate, or a string, in which case it
+            must be a path to a CA bundle to use
+        :param cert: (optional) Any user-provided SSL certificate to be trusted.
+        :param proxies: (optional) The proxies dictionary to apply to the request.
+        :rtype: requests.Response
+        """
+    
+        try:
+            conn = self.get_connection_with_tls_context(
+                request, verify, proxies=proxies, cert=cert
+            )
+        except LocationValueError as e:
+            raise InvalidURL(e, request=request)
+    
+        self.cert_verify(conn, request.url, verify, cert)
+        url = self.request_url(request, proxies)
+        self.add_headers(
+            request,
+            stream=stream,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+            proxies=proxies,
+        )
+    
+        chunked = not (request.body is None or "Content-Length" in request.headers)
+    
+        if isinstance(timeout, tuple):
+            try:
+                connect, read = timeout
+                timeout = TimeoutSauce(connect=connect, read=read)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid timeout {timeout}. Pass a (connect, read) timeout tuple, "
+                    f"or a single float to set both timeouts to the same value."
+                )
+        elif isinstance(timeout, TimeoutSauce):
+            pass
+        else:
+            timeout = TimeoutSauce(connect=timeout, read=timeout)
+    
+        try:
+&gt;           resp = conn.urlopen(
+                method=request.method,
+                url=url,
+                body=request.body,
+                headers=request.headers,
+                redirect=False,
+                assert_same_host=False,
+                preload_content=False,
+                decode_content=False,
+                retries=self.max_retries,
+                timeout=timeout,
+                chunked=chunked,
+            )
+
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\adapters.py:667: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py:841: in urlopen
+    retries = retries.increment(
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\util\retry.py:474: in increment
+    raise reraise(type(error), error, _stacktrace)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\util\util.py:39: in reraise
+    raise value
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py:787: in urlopen
+    response = self._make_request(
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py:536: in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;urllib3.connectionpool.HTTPConnectionPool object at 0x00000161DF6884B0&gt;
+err = TimeoutError('timed out'), url = '/usuario/add_reservation', timeout_value = 10
+
+    def _raise_timeout(
+        self,
+        err: BaseSSLError | OSError | SocketTimeout,
+        url: str,
+        timeout_value: _TYPE_TIMEOUT | None,
+    ) -&gt; None:
+        """Is the error actually a timeout? Will raise a ReadTimeout or pass"""
+    
+        if isinstance(err, SocketTimeout):
+&gt;           raise ReadTimeoutError(
+                self, url, f"Read timed out. (read timeout={timeout_value})"
+            ) from err
+E           urllib3.exceptions.ReadTimeoutError: HTTPConnectionPool(host='localhost', port=5003): Read timed out. (read timeout=10)
+
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py:367: ReadTimeoutError
+
+During handling of the above exception, another exception occurred:
+
+service_up = True
+
+    def test_usuario_end_to_end_reservation_payment_and_cancel(service_up):
+        """
+        Flujo de alto nivel a través del microservicio Usuario:
+    
+          1) Obtener ruta + asiento Libre (vía Usuario -&gt; GestiónVuelos).
+          2) Crear reserva vía POST /usuario/add_reservation.
+          3) Verificar contra GET /get_reservation_by_id y /get_reservation_by_code.
+          4) Listar reservas con GET /get_all_reservations y encontrar la creada.
+          5) Crear pago vía POST /usuario/create_payment.
+          6) Verificar GET /get_payment_by_id y /get_all_payments.
+          7) Cancelar pago y reserva vía DELETE /usuario/cancel_payment_and_reservation/&lt;payment_id&gt;.
+          8) Verificar que el pago ya no se encuentre.
+        """
+    
+        # 1) Buscar ruta + asiento Libre
+        pair = _find_route_and_free_seat_via_usuario()
+        if pair is None:
+            pytest.skip(
+                "[USR_E2E] No se encontró combinación (ruta, asiento Libre) a través de Usuario."
+            )
+    
+        ruta, seat_libre = pair
+        airplane_id = ruta.get("airplane_id")
+        route_id = ruta.get("airplane_route_id")
+        seat_number = seat_libre.get("seat_number")
+    
+        assert isinstance(airplane_id, int)
+        assert isinstance(route_id, int)
+        assert isinstance(seat_number, str) and seat_number
+    
+        # 2) Crear reserva vía Usuario
+        status_value = _choose_status_for_reservation()
+    
+        add_payload = {
+            "passport_number": "E2E123456",
+            "full_name": f"Test Usuario {_rand_suffix()}",
+            "email": f"e2e+{_rand_suffix()}@example.com",
+            "phone_number": "+50680000000",
+            "emergency_contact_name": "Contacto E2E",
+            "emergency_contact_phone": "+50681111111",
+            "airplane_id": airplane_id,
+            "airplane_route_id": route_id,
+            "seat_number": seat_number,
+            "status": status_value,
+        }
+    
+&gt;       r_add, body_add = _post_json("/usuario/add_reservation", add_payload)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\api\test_usuario.py:344: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\api\test_usuario.py:47: in _post_json
+    r = requests.post(
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\api.py:115: in post
+    return request("post", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\api.py:59: in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\sessions.py:589: in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\sessions.py:703: in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;requests.adapters.HTTPAdapter object at 0x00000161DF6863D0&gt;, request = &lt;PreparedRequest [POST]&gt;
+stream = False, timeout = Timeout(connect=10, read=10, total=None), verify = True, cert = None
+proxies = OrderedDict()
+
+    def send(
+        self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None
+    ):
+        """Sends PreparedRequest object. Returns Response object.
+    
+        :param request: The :class:`PreparedRequest &lt;PreparedRequest&gt;` being sent.
+        :param stream: (optional) Whether to stream the request content.
+        :param timeout: (optional) How long to wait for the server to send
+            data before giving up, as a float, or a :ref:`(connect timeout,
+            read timeout) &lt;timeouts&gt;` tuple.
+        :type timeout: float or tuple or urllib3 Timeout object
+        :param verify: (optional) Either a boolean, in which case it controls whether
+            we verify the server's TLS certificate, or a string, in which case it
+            must be a path to a CA bundle to use
+        :param cert: (optional) Any user-provided SSL certificate to be trusted.
+        :param proxies: (optional) The proxies dictionary to apply to the request.
+        :rtype: requests.Response
+        """
+    
+        try:
+            conn = self.get_connection_with_tls_context(
+                request, verify, proxies=proxies, cert=cert
+            )
+        except LocationValueError as e:
+            raise InvalidURL(e, request=request)
+    
+        self.cert_verify(conn, request.url, verify, cert)
+        url = self.request_url(request, proxies)
+        self.add_headers(
+            request,
+            stream=stream,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+            proxies=proxies,
+        )
+    
+        chunked = not (request.body is None or "Content-Length" in request.headers)
+    
+        if isinstance(timeout, tuple):
+            try:
+                connect, read = timeout
+                timeout = TimeoutSauce(connect=connect, read=read)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid timeout {timeout}. Pass a (connect, read) timeout tuple, "
+                    f"or a single float to set both timeouts to the same value."
+                )
+        elif isinstance(timeout, TimeoutSauce):
+            pass
+        else:
+            timeout = TimeoutSauce(connect=timeout, read=timeout)
+    
+        try:
+            resp = conn.urlopen(
+                method=request.method,
+                url=url,
+                body=request.body,
+                headers=request.headers,
+                redirect=False,
+                assert_same_host=False,
+                preload_content=False,
+                decode_content=False,
+                retries=self.max_retries,
+                timeout=timeout,
+                chunked=chunked,
+            )
+    
+        except (ProtocolError, OSError) as err:
+            raise ConnectionError(err, request=request)
+    
+        except MaxRetryError as e:
+            if isinstance(e.reason, ConnectTimeoutError):
+                # TODO: Remove this in 3.0.0: see #2811
+                if not isinstance(e.reason, NewConnectionError):
+                    raise ConnectTimeout(e, request=request)
+    
+            if isinstance(e.reason, ResponseError):
+                raise RetryError(e, request=request)
+    
+            if isinstance(e.reason, _ProxyError):
+                raise ProxyError(e, request=request)
+    
+            if isinstance(e.reason, _SSLError):
+                # This branch is for urllib3 v1.22 and later.
+                raise SSLError(e, request=request)
+    
+            raise ConnectionError(e, request=request)
+    
+        except ClosedPoolError as e:
+            raise ConnectionError(e, request=request)
+    
+        except _ProxyError as e:
+            raise ProxyError(e)
+    
+        except (_SSLError, _HTTPError) as e:
+            if isinstance(e, _SSLError):
+                # This branch is for urllib3 versions earlier than v1.22
+                raise SSLError(e, request=request)
+            elif isinstance(e, ReadTimeoutError):
+&gt;               raise ReadTimeout(e, request=request)
+E               requests.exceptions.ReadTimeout: HTTPConnectionPool(host='localhost', port=5003): Read timed out. (read timeout=10)
+
+C:\Users\neyfr\AppData\Local\Programs\Python\Python313\Lib\site-packages\requests\adapters.py:713: ReadTimeout</failure></testcase><testcase classname="tests.api.test_usuario_add_reservation_rag" name="test_usuario_add_reservation_validaciones_basicas[USR_ADDRES_BODY_VACIO_400-None-400-No se recibi\xf3 cuerpo JSON]" time="2.035" /><testcase classname="tests.api.test_usuario_add_reservation_rag" name="test_usuario_add_reservation_validaciones_basicas[USR_ADDRES_EMAIL_INVALIDO_400-body1-400-Error de validaci\xf3n]" time="2.047" /><testcase classname="tests.api.test_usuario_add_reservation_rag" name="test_usuario_add_reservation_validaciones_basicas[USR_ADDRES_STATUS_INVALIDO_400-body2-400-Error de validaci\xf3n]" time="2.051" /><testcase classname="tests.api.test_usuario_add_reservation_rag" name="test_usuario_add_reservation_validaciones_basicas[USR_ADDRES_CAMPO_FALTANTE_400-body3-400-Error de validaci\xf3n]" time="2.049" /><testcase classname="tests.api.test_usuario_add_reservation_rag" name="test_usuario_add_reservation_ruta_no_asociada_400" time="12.410" /><testcase classname="tests.api.test_usuario_add_reservation_rag" name="test_usuario_add_reservation_asiento_no_existe_400" time="18.495" /><testcase classname="tests.api.test_usuario_add_reservation_rag" name="test_usuario_add_reservation_asiento_no_libre_409" time="14.341" /><testcase classname="tests.api.test_usuario_add_reservation_rag" name="test_usuario_add_reservation_happy_path" time="24.713" /><testcase classname="tests.api.test_usuario_airplanes_lists_rag" name="test_usuario_get_all_airplanes_routes_contract" time="4.104" /><testcase classname="tests.api.test_usuario_airplanes_lists_rag" name="test_usuario_get_all_airplanes_with_seats_contract" time="6.167" /><testcase classname="tests.api.test_usuario_cancel_payment_and_reservation_rag" name="test_usuario_cancel_payment_validaciones_y_404[PAY_CAN_ID_INVALIDO_1-ABC123456-400-formato del payment_id es inv\xe1lido]" time="2.048" /><testcase classname="tests.api.test_usuario_cancel_payment_and_reservation_rag" name="test_usuario_cancel_payment_validaciones_y_404[PAY_CAN_ID_INVALIDO_2-PAY123-400-formato del payment_id es inv\xe1lido]" time="2.045" /><testcase classname="tests.api.test_usuario_cancel_payment_and_reservation_rag" name="test_usuario_cancel_payment_validaciones_y_404[PAY_CAN_NO_EXISTE-PAY999999-404-no se encontr]" time="4.103" /><testcase classname="tests.api.test_usuario_cancel_payment_and_reservation_rag" name="test_usuario_cancel_payment_happy_path" time="4.093"><skipped type="pytest.skip" message="[PAY_CAN_SETUP] No hay pagos generados actualmente para probar cancelación.">C:\UCR Maestria\2025\Semestre_2\Pruebas de Software\laboratorio\tests\api\test_usuario_cancel_payment_and_reservation_rag.py:74: [PAY_CAN_SETUP] No hay pagos generados actualmente para probar cancelación.</skipped></testcase><testcase classname="tests.api.test_usuario_create_payment_rag" name="test_usuario_create_payment_validaciones_basicas_y_404[USR_PAY_BODY_VACIO-None-400-No se recibi\xf3 cuerpo JSON]" time="2.056" /><testcase classname="tests.api.test_usuario_create_payment_rag" name="test_usuario_create_payment_validaciones_basicas_y_404[USR_PAY_ID_INVALIDO-body1-400-El reservation_id debe ser un entero positivo.]" time="2.045" /><testcase classname="tests.api.test_usuario_create_payment_rag" name="test_usuario_create_payment_validaciones_basicas_y_404[USR_PAY_METHOD_INV-body2-400-M\xe9todo de pago inv\xe1lido.]" time="2.049" /><testcase classname="tests.api.test_usuario_create_payment_rag" name="test_usuario_create_payment_validaciones_basicas_y_404[USR_PAY_CURRENCY_INV-body3-400-Moneda no soportada.]" time="2.049" /><testcase classname="tests.api.test_usuario_create_payment_rag" name="test_usuario_create_payment_validaciones_basicas_y_404[USR_PAY_RES_NO_EXIST-body4-404-no encontrada]" time="4.111" /><testcase classname="tests.api.test_usuario_create_payment_rag" name="test_usuario_create_payment_happy_path" time="18.516" /><testcase classname="tests.api.test_usuario_delete_reservation_rag" name="test_usuario_delete_reservation_validaciones_y_404[USR_DEL_ID_INVALIDO-0-400-n\xfamero positivo]" time="2.044" /><testcase classname="tests.api.test_usuario_delete_reservation_rag" name="test_usuario_delete_reservation_validaciones_y_404[USR_DEL_NO_EXISTE-999999-404-no encontrada]" time="4.079" /><testcase classname="tests.api.test_usuario_delete_reservation_rag" name="test_usuario_delete_reservation_happy_path" time="20.584"><failure message="AssertionError: [USR_DEL_OK_01] Código inesperado en segundo DELETE: 200 {&#10;    &quot;deleted_reservation&quot;: {&#10;      &quot;airplane_id&quot;: 1,&#10;      &quot;airplane_route_id&quot;: 1,&#10;      &quot;email&quot;: &quot;e2e+ICATVA@example.com&quot;,&#10;      &quot;emergency_contact_name&quot;: &quot;Contacto E2E&quot;,&#10;      &quot;emergency_contact_phone&quot;: &quot;+50681111111&quot;,&#10;      &quot;full_name&quot;: &quot;Test Usuario ZOYN6Q&quot;,&#10;      &quot;issued_at&quot;: &quot;Noviembre 30, 2025 - 01:40:44&quot;,&#10;      &quot;passport_number&quot;: &quot;E2E123456&quot;,&#10;      &quot;phone_number&quot;: &quot;+50680000000&quot;,&#10;      &quot;reservation_code&quot;: &quot;CMVKTX&quot;,&#10;      &quot;reservation_id&quot;: 6,&#10;      &quot;seat_number&quot;: &quot;1C&quot;,&#10;      &quot;status&quot;: &quot;Reservado&quot;&#10;    },&#10;    &quot;message&quot;: &quot;Reserva eliminada exitosamente&quot;&#10;  }&#10;  &#10;assert 200 == 404&#10; +  where 200 = &lt;Response [200]&gt;.status_code">def test_usuario_delete_reservation_happy_path():
+        """
+        Caso feliz: eliminar una reserva existente por ID.
+    
+        Pasos:
+        1) Obtener una reserva existente desde Usuario/GestiónReservas.
+        2) Llamar a DELETE /usuario/delete_reservation_by_id/&lt;reservation_id&gt;:
+           - Esperado 200, mensaje de éxito y 'deleted_reservation' en la respuesta.
+        3) Volver a llamar con el mismo ID:
+           - Esperado 404, reserva ya no existe.
+        """
+        # 1) Tomar cualquier reserva existente (reutilizamos helper del experimento de update)
+        reserva = _find_any_reservation()
+        reservation_id = reserva["reservation_id"]
+    
+        # 2) Primera eliminación: debería ser exitosa (200)
+        r1 = _delete(f"/usuario/delete_reservation_by_id/{reservation_id}")
+    
+        assert (
+            r1.status_code == 200
+        ), f"[USR_DEL_OK_01] Código inesperado en primer DELETE: {r1.status_code} {r1.text}"
+    
+        # Parsear respuesta
+        try:
+            body1 = r1.json()
+        except Exception:
+            body1 = {}
+        msg1 = body1.get("message", "") or body1.get("error", "")
+        deleted_reservation = body1.get("deleted_reservation")
+    
+        # Validaciones mínimas del caso feliz
+        msg1_lower = msg1.lower()
+        # Aceptamos cualquier mensaje que indique eliminación
+        assert (
+            "eliminad" in msg1_lower  # "eliminada"/"eliminado"
+            or "borrad" in msg1_lower  # "borrada"/"borrado"
+        ), (
+            "[USR_DEL_OK_01] Mensaje de éxito inesperado en primer DELETE: "
+            f"{msg1}"
+        )
+    
+        assert isinstance(deleted_reservation, dict), (
+            "[USR_DEL_OK_01] La respuesta no contiene 'deleted_reservation' como objeto: "
+            f"{body1}"
+        )
+        # Coherencia básica: el ID eliminado debe coincidir
+        assert deleted_reservation.get("reservation_id") == reservation_id, (
+            "[USR_DEL_OK_01] El reservation_id de 'deleted_reservation' no coincide "
+            f"con el esperado. Obtenido: {deleted_reservation.get('reservation_id')}, "
+            f"esperado: {reservation_id}"
+        )
+    
+        # 3) Segunda eliminación: ahora la reserva ya no debería existir (404)
+        r2 = _delete(f"/usuario/delete_reservation_by_id/{reservation_id}")
+    
+&gt;       assert (
+            r2.status_code == 404
+        ), f"[USR_DEL_OK_01] Código inesperado en segundo DELETE: {r2.status_code} {r2.text}"
+E       AssertionError: [USR_DEL_OK_01] Código inesperado en segundo DELETE: 200 {
+E           "deleted_reservation": {
+E             "airplane_id": 1,
+E             "airplane_route_id": 1,
+E             "email": "e2e+ICATVA@example.com",
+E             "emergency_contact_name": "Contacto E2E",
+E             "emergency_contact_phone": "+50681111111",
+E             "full_name": "Test Usuario ZOYN6Q",
+E             "issued_at": "Noviembre 30, 2025 - 01:40:44",
+E             "passport_number": "E2E123456",
+E             "phone_number": "+50680000000",
+E             "reservation_code": "CMVKTX",
+E             "reservation_id": 6,
+E             "seat_number": "1C",
+E             "status": "Reservado"
+E           },
+E           "message": "Reserva eliminada exitosamente"
+E         }
+E         
+E       assert 200 == 404
+E        +  where 200 = &lt;Response [200]&gt;.status_code
+
+tests\api\test_usuario_delete_reservation_rag.py:137: AssertionError</failure></testcase><testcase classname="tests.api.test_usuario_edit_payment_rag" name="test_usuario_edit_payment_validaciones_y_404[USR_EDIT_PAY_BODY_VACIO-PAY123456-None-400-No se recibi\xf3 cuerpo JSON]" time="2.064" /><testcase classname="tests.api.test_usuario_edit_payment_rag" name="test_usuario_edit_payment_validaciones_y_404[USR_EDIT_PAY_ID_INVALIDO-ABC123-body1-400-El formato del payment_id es inv\xe1lido. Debe ser PAY123456]" time="2.062" /><testcase classname="tests.api.test_usuario_edit_payment_rag" name="test_usuario_edit_payment_validaciones_y_404[USR_EDIT_PAY_BODY_CAMPOS_EXTRA-PAY123456-body2-400-Solo se pueden actualizar: payment_method, payment_date, transaction_reference]" time="2.063" /><testcase classname="tests.api.test_usuario_edit_payment_rag" name="test_usuario_edit_payment_validaciones_y_404[USR_EDIT_PAY_NO_EXISTE-PAY999999-body3-404-No se encontr\xf3]" time="4.123" /><testcase classname="tests.api.test_usuario_edit_payment_rag" name="test_usuario_edit_payment_happy_path" time="8.276" /><testcase classname="tests.api.test_usuario_flights_routes_seats_rag" name="test_usuario_get_airplane_route_by_id_validaciones_y_404[USR_ROUTE_ID_CERO_400-/get_airplane_route_by_id/0-400-El ID debe ser un n\xfamero positivo]" time="2.059" /><testcase classname="tests.api.test_usuario_flights_routes_seats_rag" name="test_usuario_get_airplane_route_by_id_validaciones_y_404[USR_ROUTE_ID_NEGATIVO_404-/get_airplane_route_by_id/-1-404-not found]" time="2.039" /><testcase classname="tests.api.test_usuario_flights_routes_seats_rag" name="test_usuario_get_airplane_route_by_id_validaciones_y_404[USR_ROUTE_NO_EXISTE_404-/get_airplane_route_by_id/999999-404-Ruta de vuelo no encontrada]" time="4.092" /><testcase classname="tests.api.test_usuario_flights_routes_seats_rag" name="test_usuario_get_airplane_route_by_id_happy_path" time="8.224" /><testcase classname="tests.api.test_usuario_flights_routes_seats_rag" name="test_usuario_get_seats_by_airplane_id_validaciones_y_errores[USR_SEATS_ID_CERO_400-/get_seats_by_airplane_id/0/seats-400-Por favor proporciona un ID de avi\xf3n v\xe1lido]" time="2.028" /><testcase classname="tests.api.test_usuario_flights_routes_seats_rag" name="test_usuario_get_seats_by_airplane_id_validaciones_y_errores[USR_SEATS_ID_NEGATIVO_404-/get_seats_by_airplane_id/-1/seats-404-not found]" time="2.029" /><testcase classname="tests.api.test_usuario_flights_routes_seats_rag" name="test_usuario_get_seats_by_airplane_id_validaciones_y_errores[USR_SEATS_AIRPLANE_NO_EXISTE_500-/get_seats_by_airplane_id/999999/seats-500-Error al procesar los datos: formato inv\xe1lido o sin conexi\xf3n.]" time="4.126" /><testcase classname="tests.api.test_usuario_flights_routes_seats_rag" name="test_usuario_get_seats_by_airplane_id_happy_path" time="10.330" /><testcase classname="tests.api.test_usuario_get_payments_rag" name="test_usuario_get_payment_by_id_validaciones_y_404[USR_PAY_GET_ID_FORMATO_INVALIDO_400-/get_payment_by_id/ABC123-400-El formato del payment_id es inv\xe1lido. Debe ser como PAY123456]" time="2.072" /><testcase classname="tests.api.test_usuario_get_payments_rag" name="test_usuario_get_payment_by_id_validaciones_y_404[USR_PAY_GET_ID_NO_EXISTE_404-/get_payment_by_id/PAY999999-404-No se encontr\xf3 ning\xfan pago con ID: PAY999999]" time="4.129" /><testcase classname="tests.api.test_usuario_get_payments_rag" name="test_usuario_get_payment_by_id_happy_path" time="8.197" /><testcase classname="tests.api.test_usuario_get_payments_rag" name="test_usuario_get_all_payments_contract" time="4.090" /><testcase classname="tests.api.test_usuario_get_reservations_rag" name="test_usuario_get_reservation_by_code_validaciones_y_404[USR_RES_CODE_VACIO_400-/get_reservation_by_code/%20%20%20-400-El c\xf3digo de reserva es obligatorio y debe ser texto v\xe1lido.]" time="2.039" /><testcase classname="tests.api.test_usuario_get_reservations_rag" name="test_usuario_get_reservation_by_code_validaciones_y_404[USR_RES_CODE_NO_EXISTE_404-/get_reservation_by_code/ZZZ999-404-Reserva no encontrada en Gesti\xf3nReservas]" time="4.092" /><testcase classname="tests.api.test_usuario_get_reservations_rag" name="test_usuario_get_reservation_by_code_happy_path" time="8.200" /><testcase classname="tests.api.test_usuario_get_reservations_rag" name="test_usuario_get_reservation_by_id_validaciones_y_404[USR_RES_ID_CERO_400-/get_reservation_by_id/0-400-El ID debe ser un n\xfamero entero positivo.]" time="2.043" /><testcase classname="tests.api.test_usuario_get_reservations_rag" name="test_usuario_get_reservation_by_id_validaciones_y_404[USR_RES_ID_NEGATIVO_404-/get_reservation_by_id/-1-404-not found]" time="2.045" /><testcase classname="tests.api.test_usuario_get_reservations_rag" name="test_usuario_get_reservation_by_id_validaciones_y_404[USR_RES_ID_NO_EXISTE_404-/get_reservation_by_id/999999-404-Reserva no encontrada en Gesti\xf3nReservas]" time="4.094" /><testcase classname="tests.api.test_usuario_get_reservations_rag" name="test_usuario_get_reservation_by_id_happy_path" time="8.254" /><testcase classname="tests.api.test_usuario_get_reservations_rag" name="test_usuario_get_all_reservations_contract" time="4.109" /><testcase classname="tests.api.test_usuario_health_rag" name="test_usuario_health_ok" time="2.060" /><testcase classname="tests.api.test_usuario_update_reservation_rag" name="test_usuario_update_reservation_validaciones_basicas[USR_UPD_BODY_VACIO-ABC123-None-400-No se recibi\xf3 cuerpo JSON]" time="6.167" /><testcase classname="tests.api.test_usuario_update_reservation_rag" name="test_usuario_update_reservation_validaciones_basicas[USR_UPD_CODIGO_INVALIDO-ABC-body1-400-El c\xf3digo de reserva debe ser 6 caracteres alfanum\xe9ricos]" time="2.052" /><testcase classname="tests.api.test_usuario_update_reservation_rag" name="test_usuario_update_reservation_validaciones_basicas[USR_UPD_CAMPOS_EXTRA-ABC123-body2-400-exactamente estos campos]" time="2.030" /><testcase classname="tests.api.test_usuario_update_reservation_rag" name="test_usuario_update_reservation_sin_cambios" time="8.287" /><testcase classname="tests.api.test_usuario_update_reservation_rag" name="test_usuario_update_reservation_happy_path" time="10.367" /></testsuite></testsuites>

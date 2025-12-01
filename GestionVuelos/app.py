@@ -42,6 +42,12 @@ logging.basicConfig(
 
 app = Flask(__name__)
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+
+
+
+
 # === Identificador de instancia (por proceso) ===
 INSTANCE_ID = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
 
@@ -397,6 +403,36 @@ def __state():
             "airplane_ids": sorted([a["airplane_id"] for a in airplanes]),
             "routes_count": len(airplanes_routes)
         }), 200
+
+
+@app.route("/openapi.json", methods=["GET"])
+def openapi_json():
+    """
+    Devuelve el OpenAPI spec del repo para ser consumido como 'live spec'
+    por pruebas de contrato (por ejemplo test_ai_workflow.py).
+    """
+    try:
+        spec_path = os.path.join(BASE_DIR, "openapi.json")
+        if not os.path.exists(spec_path):
+            return jsonify({
+                "message": "Spec openapi.json no encontrado en la raíz del repo.",
+                "errors": {}
+            }), 500
+
+        with open(spec_path, encoding="utf-8") as f:
+            data = json.load(f)
+        # Content-Type application/json lo pone jsonify
+        return jsonify(data), 200
+
+    except Exception:
+        logging.exception("❌ Error al servir /openapi.json")
+        return jsonify({
+            "message": "Error interno al cargar el OpenAPI spec.",
+            "errors": {}
+        }), 500
+
+
+
 
 # -----------------------------
 # Endpoints Airplanes
